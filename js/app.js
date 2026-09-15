@@ -202,7 +202,7 @@
   });
 
   /* ---------- playback ---------- */
-  var video = $("video"), canvas = $("fallback"), player = null, cctx = null, raf = 0;
+  var video = $("video"), canvas = $("fallback"), player = null, cctx = null;
 
   function ensurePlayer() {
     if (player) return player;
@@ -218,8 +218,9 @@
   }
 
   function goSim() {
-    if (!player || player.simMode) return;
+    if (!player) return;
     player.simMode = true;
+    if (!canvas.hidden) return;
     video.hidden = true; canvas.hidden = false;
     sizeCanvas(); drawSim();
     if (player.playing) player.play();
@@ -275,8 +276,13 @@
       if (src) { try { video.src = src; video.load(); } catch (e) {} }
       else if (player) { player.simMode = true; }
     }
-    video.hidden = false; canvas.hidden = true;
     player.setRoute(state.route.scenes);
+    if (player.simMode) {
+      video.hidden = true; canvas.hidden = false;
+      sizeCanvas(); drawSim();
+    } else {
+      video.hidden = false; canvas.hidden = true;
+    }
     renderUpnext(-1);
     $("doneBox").hidden = true;
     $("cutTotal").textContent = S.fmt(player.totalCut());
@@ -422,6 +428,11 @@
   });
 
   /* ---------- boot ---------- */
+  if (!S || !EP || typeof SCENES === "undefined") {
+    document.querySelector("main").innerHTML =
+      '<div class="empty">Missing data scripts (solver / episode / scenes). Check script paths and reload.</div>';
+    return;
+  }
   $("epTitle").textContent = EP.title.toUpperCase() + " · S01E07";
   syncBudgetUI();
   rebuild();

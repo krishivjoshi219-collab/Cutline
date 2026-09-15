@@ -128,7 +128,7 @@
     this.simElapsed = 0;
     var scene = this.route[i];
     this.onScene(scene, i, this.route.length);
-    if (jumping || i > 0) this.onTransition(scene, i);
+    if (jumping) this.onTransition(scene, i);
     if (this.simMode) { if (this.playing) this._playSim(); return; }
     if (this.video) {
       try { this.video.currentTime = this.mapToVideo(scene.start); } catch (e) {}

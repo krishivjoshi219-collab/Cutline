@@ -154,6 +154,9 @@ canvas#fallback[hidden], video#video[hidden] { display: none; }
 footer { padding: 26px 48px 40px; color: var(--muted); font-size: 18px; }
 kbd { background: #1a2450; border: 1px solid #33448a; border-radius: 6px; padding: 1px 10px; font-size: 17px; }
 .empty { color: var(--muted); font-size: 20px; padding: 18px; border: 2px dashed #33448a; border-radius: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
 @media (max-width: 1100px) {
   .choose-grid, .player-grid { grid-template-columns: 1fr; }
   main, header.topbar, footer { padding-left: 20px; padding-right: 20px; }

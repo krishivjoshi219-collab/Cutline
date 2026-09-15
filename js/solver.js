@@ -22,7 +22,6 @@
     return Math.max(0, s.end - s.start);
   }
   function asArray(v) { return Array.isArray(v) ? v : []; }
-  function density(score, w) { return w > 0 ? score / w : -Infinity; }
 
   // Score one scene for a given request. Deterministic, no randomness.
   function scoreScene(scene, opts) {
@@ -130,11 +129,11 @@
       var w = duration(s), v = scores[s.id];
       for (var c = B; c >= w; c--) {
         var alt = dp[c - w] + v;
-        if (alt > dp[c] + 1e-9) { dp[c] = alt; pick[c] = pick[c - w].concat(s.id); }
+        if (alt > dp[c] + EPS) { dp[c] = alt; pick[c] = pick[c - w].concat(s.id); }
       }
     });
     var best = 0;
-    for (var c = 0; c <= B; c++) if (dp[c] > dp[best] + 1e-9) best = c;
+    for (var c = 0; c <= B; c++) if (dp[c] > dp[best] + EPS) best = c;
     var chosen = closeDependencies(pick[best], byId, skipDep);
 
     // Repair: while over budget, drop the lowest value-density non-required,
@@ -168,14 +167,15 @@
     (function enforceAnchor() {
       if (budgetSec > 600) return;
       var hasPayoff = chosen.some(function (id) {
-        var p = byId[id].plot;
+        var p = asArray(byId[id].plot);
         return p.indexOf("reveal") !== -1 || p.indexOf("resolution") !== -1;
       });
       if (hasPayoff) return;
       var cands = pool.filter(function (s) {
-        var isPayoff = s.plot.indexOf("reveal") !== -1 || s.plot.indexOf("resolution") !== -1;
+        var plot = asArray(s.plot);
+        var isPayoff = plot.indexOf("reveal") !== -1 || plot.indexOf("resolution") !== -1;
         if (!isPayoff) return false;
-        if (opts.thread && opts.thread !== "all" && s.threads.indexOf(opts.thread) === -1) return false;
+        if (opts.thread && opts.thread !== "all" && asArray(s.threads).indexOf(opts.thread) === -1) return false;
         if (opts.kidsOnly && !s.familySafe) return false;
         return true;
       });
@@ -216,7 +216,7 @@
       var guard = 0;
       while (guard++ < 100) {
         var remaining = budgetSec - sumDuration(chosen, byId);
-        if (remaining < 25) break; // nothing meaningful fits below this
+        if (remaining < MIN_FILL_SEC) break; // nothing meaningful fits below this
         var inRoute = {};
         chosen.forEach(function (id) { inRoute[id] = true; });
         var bestId = null, bestDens = -1;
@@ -229,8 +229,8 @@
           var qualityGate = chosen.length < 3 || (v / w) >= routeAvg * 0.5;
           if (!qualityGate) return;
           var dens = v / w;
-          if (dens > bestDens + 1e-9 ||
-              (Math.abs(dens - bestDens) < 1e-9 && bestId && s.start < byId[bestId].start)) {
+          if (dens > bestDens + EPS ||
+              (Math.abs(dens - bestDens) < EPS && bestId && s.start < byId[bestId].start)) {
             bestDens = dens; bestId = s.id;
           }
         });
@@ -268,8 +268,9 @@
     if (/kids|family-safe|family safe/.test(t)) out.kidsOnly = true;
     var s = t.match(/stopped at\s*(\d+):(\d+)|(\d+):(\d+)\s*yesterday|from\s*(\d+):(\d+)/);
     if (s) {
-      var parts = s.slice(1).filter(Boolean).map(Number);
-      out.afterSec = parts[0] * 60 + parts[1];
+      var mm = s[1] || s[3] || s[5];
+      var ss = s[2] || s[4] || s[6];
+      if (mm !== undefined && ss !== undefined) out.afterSec = parseInt(mm, 10) * 60 + parseInt(ss, 10);
     }
     if (/catch me up|catch-up|re-?entry|before episode/.test(t) && out.budgetMin == null) out.budgetMin = 8;
     return out;
