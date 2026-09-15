@@ -65,6 +65,8 @@ h2.section-title { font-size: 26px; letter-spacing: 2px; color: var(--accent); m
   border-color: var(--focus) !important;
   box-shadow: 0 0 0 4px rgba(34,211,238,.55) !important;
 }
+.skip-link { position: absolute; left: -9999px; top: 0; background: var(--gold); color: #000; padding: 12px 20px; z-index: 100; border-radius: 0 0 12px 0; font-weight: 800; }
+.skip-link:focus { left: 0; }
 button.focusable, .watch-card.focusable { transition: box-shadow .12s, border-color .12s; }
 
 .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
@@ -155,7 +157,10 @@ footer { padding: 26px 48px 40px; color: var(--muted); font-size: 18px; }
 kbd { background: #1a2450; border: 1px solid #33448a; border-radius: 6px; padding: 1px 10px; font-size: 17px; }
 .empty { color: var(--muted); font-size: 20px; padding: 18px; border: 2px dashed #33448a; border-radius: 12px; }
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; scroll-behavior: auto !important; }
+  * { transition: none !important; scroll-behavior: auto !important; animation: none !important; }
+}
+@media (forced-colors: active) {
+  .watch-card, .card, .pill, .btn { forced-color-adjust: auto; }
 }
 @media (max-width: 1100px) {
   .choose-grid, .player-grid { grid-template-columns: 1fr; }

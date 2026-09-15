@@ -9,6 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
+  var VERSION = "1.0.0";
   var IMPORTANCE_WEIGHT = 100;
   var PLOT_BONUS = { reveal: 12, resolution: 10, confrontation: 8, discovery: 6, twist: 5 };
   var THREAD_MATCH_BONUS = 30;
@@ -16,10 +17,13 @@
   var MAX_BUDGET_SEC = 6 * 60 * 60;
   var MIN_FILL_SEC = 25;
   var EPS = 1e-9;
+  var VALID_THREADS = { all: true, mystery: true, heart: true, chase: true };
 
   function duration(s) {
-    if (!s || !isFinite(s.end) || !isFinite(s.start)) return 0;
-    return Math.max(0, s.end - s.start);
+    if (!s) return 0;
+    var st = Number(s.start), en = Number(s.end);
+    if (!isFinite(st) || !isFinite(en)) return 0;
+    return Math.max(0, en - st);
   }
   function asArray(v) { return Array.isArray(v) ? v : []; }
 
@@ -84,7 +88,11 @@
    */
   function buildRoute(scenes, budgetSec, opts) {
     opts = opts || {};
-    scenes = asArray(scenes).filter(function (s) { return s && s.id != null; });
+    if (opts.thread && !VALID_THREADS[opts.thread]) opts.thread = "all";
+    if (opts.mood !== "intense" && opts.mood !== "gentle") opts.mood = null;
+    scenes = asArray(scenes).filter(function (s) {
+      return s && s.id != null && isFinite(s.start) && isFinite(s.end) && s.end > s.start;
+    });
     budgetSec = Math.max(0, Math.floor(isFinite(budgetSec) ? budgetSec : 0));
     if (budgetSec > MAX_BUDGET_SEC) budgetSec = MAX_BUDGET_SEC;
     if (!scenes.length) {
@@ -283,5 +291,5 @@
   }
   function fmtRange(s) { return fmt(s.start) + "\u2013" + fmt(s.end); }
 
-  return { buildRoute: buildRoute, scoreScene: scoreScene, parseRequest: parseRequest, fmt: fmt, fmtRange: fmtRange, duration: duration };
+  return { VERSION: VERSION, buildRoute: buildRoute, scoreScene: scoreScene, parseRequest: parseRequest, fmt: fmt, fmtRange: fmtRange, duration: duration };
 });

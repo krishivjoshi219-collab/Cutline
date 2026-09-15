@@ -1,6 +1,9 @@
 /* CUTLINE app — 10-foot Fire TV UX: budget select, live route preview, playback. */
 (function () {
   "use strict";
+  window.addEventListener("error", function (e) {
+    try { console.error("[cutline]", e.message); } catch (err) {}
+  });
   var S = window.CutlineSolver;
   var EP = window.EPISODE;
 
@@ -62,6 +65,9 @@
 
   function renderPreview() {
     var r = state.route;
+    if (!r) return;
+    var list = $("routeList");
+    if (list) list.setAttribute("aria-busy", "true");
     $("routeTitle").textContent = routeLabel();
     $("heroBudget").textContent = state.afterSec != null
       ? Math.round(budgetSec() / 60) + " catch-up minutes"
@@ -113,6 +119,10 @@
       hm.appendChild(b);
     });
     refreshFocusables();
+    try {
+      localStorage.setItem("cutline:v1", JSON.stringify({ budget: state.budget, thread: state.thread, intense: state.intense, kidsOnly: state.kidsOnly }));
+    } catch (e) {}
+    if (list) list.setAttribute("aria-busy", "false");
   }
 
   var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -139,10 +149,13 @@
     if (state.budget !== "full") $("morph").value = Math.round(state.budget / 60);
   }
 
+  var morphT = null;
   $("morph").addEventListener("input", function (e) {
     clearReentry();
     state.budget = parseInt(e.target.value, 10) * 60;
-    syncBudgetUI(); rebuild();
+    syncBudgetUI();
+    if (morphT) clearTimeout(morphT);
+    morphT = setTimeout(rebuild, 60);
   });
 
   $("threadRow").addEventListener("click", function (e) {

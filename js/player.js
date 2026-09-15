@@ -66,7 +66,9 @@
 
   Player.prototype.setRoute = function (routeScenes) {
     this.stop();
-    this.route = Array.isArray(routeScenes) ? routeScenes.slice() : [];
+    this.route = Array.isArray(routeScenes) ? routeScenes.filter(function (s) {
+      return s && s.id != null && isFinite(s.start) && isFinite(s.end) && s.end > s.start;
+    }) : [];
     this.index = -1;
     this.cutElapsed = 0;
     this.simElapsed = 0;
@@ -89,7 +91,9 @@
     this.playing = true;
     if (this.simMode) { this._playSim(); return; }
     if (this.index < 0) this._goto(0);
-    else if (this.video) this.video.play();
+    else if (this.video) {
+      try { var p = this.video.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+    }
   };
 
   Player.prototype.pause = function () {

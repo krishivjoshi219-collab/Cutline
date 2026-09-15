@@ -3,10 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="CUTLINE — time-budgeted viewing routes. Keep the story, cut the wandering.">
+<meta name="theme-color" content="#070d24">
 <title>CUTLINE — I have 15 minutes. Give me the story.</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<a class="skip-link" href="#routeTitle">Skip to story route</a>
+<noscript><div class="empty" style="margin:16px 48px">CUTLINE needs JavaScript to build time-budgeted cuts.</div></noscript>
 <header class="topbar">
   <div class="logo">CUTLINE</div>
   <div class="tagline">Keep the story. Cut the wandering. <b>Not a recap — a version you can finish.</b></div>
@@ -91,7 +95,7 @@
             <span id="coverageText">—</span>
           </div>
           <div class="heatmap" id="heatmap" aria-label="Story heatmap"></div>
-          <ul class="route-list" id="routeList"></ul>
+          <ul class="route-list" id="routeList" aria-live="polite" aria-busy="false"></ul>
           <div class="row">
             <button class="btn gold focusable" id="playBtn">▶ Play this cut</button>
             <button class="btn ghost focusable" id="techBtn">Algorithm + JSON</button>
@@ -147,10 +151,10 @@
   CUTLINE · Fire TV track · Amazon App Dev Hackathon 2026 · “Not a recap. A version you can finish.”
 </footer>
 
-<script src="js/solver.js"></script>
-<script src="js/episode.js"></script>
-<script src="js/scenes.js"></script>
-<script src="js/player.js"></script>
-<script src="js/app.js"></script>
+<script defer src="js/solver.js"></script>
+<script defer src="js/episode.js"></script>
+<script defer src="js/scenes.js"></script>
+<script defer src="js/player.js"></script>
+<script defer src="js/app.js"></script>
 </body>
 </html>

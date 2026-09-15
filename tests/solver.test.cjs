@@ -101,4 +101,17 @@ for (const b of [300, 600, 900, 1800]) {
   ok(Math.abs(pl.mapToEpisode(v) - 1567) < 1e-6, "episode<->video mapping round-trips");
 }
 
+ // 10. Production hardening: invalid / edge inputs never throw, never exceed budget.
+{
+  ok(Solver.buildRoute([], 900, {}).scenes.length === 0, "empty input -> empty route");
+  ok(Solver.buildRoute(SCENES, 0, {}).totalDuration === 0, "zero budget -> zero duration");
+  ok(Solver.buildRoute(SCENES, -50, {}).totalDuration === 0, "negative budget clamped");
+  ok(Solver.buildRoute(null, 900, {}).scenes.length === 0, "null scenes -> empty route");
+  ok(Solver.buildRoute(SCENES, 900, { thread: "nope" }).scenes.length > 0, "unknown thread falls back");
+  const bad = SCENES.concat([{ id: "bad", start: NaN, end: NaN }]);
+  const rb = Solver.buildRoute(bad, 900, {});
+  ok(rb.totalDuration <= 900 && !rb.ids.includes("bad"), "malformed scene ignored, budget held");
+  ok(typeof Solver.VERSION === "string", "solver exposes VERSION");
+}
+
 console.log("\nAll " + n + " checks passed.");

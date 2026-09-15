@@ -5,7 +5,10 @@
   "description": "CUTLINE — time-budgeted viewing routes for Fire TV. Amazon App Dev Hackathon 2026.",
   "scripts": {
     "test": "node tests/solver.test.cjs",
-    "serve": "python3 -m http.server 8080"
+    "test:strict": "node --unhandled-rejections=strict tests/solver.test.cjs",
+    "serve": "python3 -m http.server 8080",
+    "lint": "node -c js/solver.js && node -c js/player.js && node -c js/app.js && node -c js/scenes.js && node -c js/episode.js && echo OK"
   },
-  "engines": { "node": ">=16" }
+  "engines": { "node": ">=16" },
+  "license": "MIT"
 }
