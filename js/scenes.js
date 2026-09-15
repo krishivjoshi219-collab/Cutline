@@ -1,0 +1,614 @@
+/* Generated mirror of data/scenes.json — do not hand-edit. Regenerate instead. */
+var SCENES = [
+  {
+    "characters": [
+      "Detective Rao",
+      "Maya"
+    ],
+    "familySafe": true,
+    "id": "s01",
+    "importance": 0.9,
+    "intensity": 2,
+    "plot": [
+      "setup"
+    ],
+    "required_after": [],
+    "start": 0,
+    "synopsis": "Fog. A light goes dark. Rao finds the harbor log torn out.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Fog Over Harbor",
+    "end": 160
+  },
+  {
+    "characters": [
+      "Maya",
+      "Jonah"
+    ],
+    "familySafe": true,
+    "id": "s02",
+    "importance": 0.72,
+    "intensity": 2,
+    "plot": [
+      "setup"
+    ],
+    "required_after": [],
+    "start": 160,
+    "end": 270,
+    "synopsis": "Maya rows home after three years gone. Nobody claps.",
+    "threads": [
+      "heart"
+    ],
+    "title": "Maya Returns"
+  },
+  {
+    "characters": [
+      "Detective Rao",
+      "Harbormaster"
+    ],
+    "familySafe": true,
+    "id": "s03",
+    "importance": 0.78,
+    "intensity": 3,
+    "plot": [
+      "discovery"
+    ],
+    "required_after": [],
+    "start": 270,
+    "end": 392,
+    "synopsis": "Slip 9 is empty. The missing boat was logged nowhere.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Empty Slip"
+  },
+  {
+    "characters": [
+      "Maya",
+      "Lena"
+    ],
+    "familySafe": true,
+    "id": "s04",
+    "importance": 0.42,
+    "intensity": 1,
+    "plot": [
+      "heart"
+    ],
+    "required_after": [],
+    "start": 392,
+    "end": 492,
+    "synopsis": "Cold eggs. Old grievances. Lena will not say where she was.",
+    "threads": [
+      "heart"
+    ],
+    "title": "Breakfast Static"
+  },
+  {
+    "characters": [
+      "Maya",
+      "Detective Rao"
+    ],
+    "familySafe": true,
+    "id": "s05",
+    "importance": 0.93,
+    "intensity": 3,
+    "plot": [
+      "discovery"
+    ],
+    "required_after": [],
+    "start": 492,
+    "end": 665,
+    "synopsis": "Behind the logbook: half a chart, tide marks, a name scratched out.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Torn Map Discovery"
+  },
+  {
+    "characters": [
+      "Jonah",
+      "Harbormaster"
+    ],
+    "familySafe": true,
+    "id": "s06",
+    "importance": 0.4,
+    "intensity": 1,
+    "plot": [
+      "heart"
+    ],
+    "required_after": [],
+    "start": 665,
+    "end": 770,
+    "synopsis": "Town gossip does zero plot work and great color work.",
+    "threads": [
+      "heart"
+    ],
+    "title": "Gulls & Gossip"
+  },
+  {
+    "characters": [
+      "Detective Rao",
+      "Jonah"
+    ],
+    "familySafe": true,
+    "id": "s07",
+    "importance": 0.61,
+    "intensity": 4,
+    "plot": [
+      "chase"
+    ],
+    "required_after": [],
+    "start": 770,
+    "end": 880,
+    "synopsis": "A patrol launch threads the moorings at full throttle.",
+    "threads": [
+      "chase"
+    ],
+    "title": "Harbor Patrol"
+  },
+  {
+    "characters": [
+      "Jonah",
+      "Maya"
+    ],
+    "familySafe": true,
+    "id": "s08",
+    "importance": 0.68,
+    "intensity": 2,
+    "plot": [
+      "setup"
+    ],
+    "required_after": [
+      "s05"
+    ],
+    "start": 880,
+    "end": 965,
+    "synopsis": "Jonah begs Maya to stop reading the torn map. She keeps reading.",
+    "threads": [
+      "mystery",
+      "heart"
+    ],
+    "title": "Jonah's Warning"
+  },
+  {
+    "characters": [
+      "Maya",
+      "Detective Rao"
+    ],
+    "familySafe": true,
+    "id": "s09",
+    "importance": 0.7,
+    "intensity": 3,
+    "plot": [
+      "discovery"
+    ],
+    "required_after": [],
+    "start": 965,
+    "end": 1043,
+    "synopsis": "At low tide the harbor floor gives up a lantern with fresh oil.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Low Tide Search"
+  },
+  {
+    "characters": [
+      "Detective Rao",
+      "Maya"
+    ],
+    "familySafe": true,
+    "id": "s10",
+    "importance": 0.73,
+    "intensity": 3,
+    "plot": [
+      "clue"
+    ],
+    "required_after": [],
+    "start": 1043,
+    "end": 1103,
+    "synopsis": "Mudflat bootprints point at the boathouse, size 9, dragging left. No map needed to read this ground.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Mudflat Clue"
+  },
+  {
+    "characters": [
+      "Detective Rao",
+      "Lena"
+    ],
+    "familySafe": false,
+    "id": "s11",
+    "importance": 0.91,
+    "intensity": 5,
+    "plot": [
+      "confrontation"
+    ],
+    "required_after": [],
+    "start": 1103,
+    "end": 1302,
+    "synopsis": "On the fuel dock Rao corners Lena. The whole harbor watches.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Dock Confrontation"
+  },
+  {
+    "characters": [
+      "Maya",
+      "Jonah"
+    ],
+    "familySafe": true,
+    "id": "s12",
+    "importance": 0.48,
+    "intensity": 1,
+    "plot": [
+      "heart"
+    ],
+    "required_after": [],
+    "start": 1302,
+    "end": 1410,
+    "synopsis": "Two siblings split a sandwich and most of the blame.",
+    "threads": [
+      "heart"
+    ],
+    "title": "Aftermath Quiet"
+  },
+  {
+    "characters": [
+      "Harbormaster",
+      "Lena"
+    ],
+    "familySafe": true,
+    "id": "s13",
+    "importance": 0.55,
+    "intensity": 2,
+    "plot": [
+      "setup"
+    ],
+    "required_after": [],
+    "start": 1410,
+    "end": 1520,
+    "synopsis": "Rumors at the market stall: the light was moved twice, not once.",
+    "threads": [
+      "mystery",
+      "heart"
+    ],
+    "title": "Fish Market Rumors"
+  },
+  {
+    "characters": [
+      "Maya",
+      "Detective Rao"
+    ],
+    "familySafe": true,
+    "id": "s14",
+    "importance": 0.8,
+    "intensity": 3,
+    "plot": [
+      "discovery"
+    ],
+    "required_after": [
+      "s05"
+    ],
+    "start": 1520,
+    "end": 1640,
+    "synopsis": "A signal lamp blinks from the closed cannery. Wrong code. Right hand.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Night Signal"
+  },
+  {
+    "characters": [
+      "Lena",
+      "Harbormaster"
+    ],
+    "familySafe": true,
+    "id": "s15",
+    "importance": 0.66,
+    "intensity": 3,
+    "plot": [
+      "twist"
+    ],
+    "required_after": [],
+    "start": 1640,
+    "end": 1745,
+    "synopsis": "Lena's alibi quietly collapses over a bus ticket she never bought.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Lena Lies"
+  },
+  {
+    "characters": [
+      "Jonah",
+      "Maya"
+    ],
+    "familySafe": true,
+    "id": "s16",
+    "importance": 0.64,
+    "intensity": 4,
+    "plot": [
+      "chase"
+    ],
+    "required_after": [],
+    "start": 1745,
+    "end": 1815,
+    "synopsis": "The storm front arrives early. Every boat runs for cover.",
+    "threads": [
+      "chase"
+    ],
+    "title": "Storm Build"
+  },
+  {
+    "characters": [
+      "Maya",
+      "Jonah"
+    ],
+    "familySafe": false,
+    "id": "s17",
+    "importance": 0.71,
+    "intensity": 5,
+    "plot": [
+      "danger",
+      "chase"
+    ],
+    "required_after": [],
+    "start": 1815,
+    "end": 1886,
+    "synopsis": "A breakwater run at dusk. The edit earns the splash.",
+    "threads": [
+      "chase"
+    ],
+    "title": "Breakwater Run"
+  },
+  {
+    "characters": [
+      "Maya",
+      "Detective Rao"
+    ],
+    "familySafe": true,
+    "id": "s18",
+    "importance": 0.95,
+    "intensity": 4,
+    "plot": [
+      "reveal"
+    ],
+    "required_after": [
+      "s10"
+    ],
+    "start": 1886,
+    "end": 2110,
+    "synopsis": "The boathouse door opens. The moved light. The why. The who.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Boathouse Reveal"
+  },
+  {
+    "characters": [
+      "Detective Rao",
+      "Harbormaster"
+    ],
+    "familySafe": true,
+    "id": "s19",
+    "importance": 0.78,
+    "intensity": 3,
+    "plot": [
+      "twist"
+    ],
+    "required_after": [
+      "s18"
+    ],
+    "start": 2110,
+    "end": 2225,
+    "synopsis": "The light was moved to hide a second arrival nobody logged.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Who Moved the Light"
+  },
+  {
+    "characters": [
+      "Lena",
+      "Detective Rao"
+    ],
+    "familySafe": true,
+    "id": "s20",
+    "importance": 0.82,
+    "intensity": 4,
+    "plot": [
+      "confrontation"
+    ],
+    "required_after": [
+      "s18"
+    ],
+    "start": 2225,
+    "end": 2335,
+    "synopsis": "Lena's reason lands like a second storm. Rao has to choose.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "The Alibi Breaks"
+  },
+  {
+    "characters": [
+      "Maya",
+      "Lena"
+    ],
+    "familySafe": true,
+    "id": "s21",
+    "importance": 0.55,
+    "intensity": 2,
+    "plot": [
+      "heart"
+    ],
+    "required_after": [],
+    "start": 2335,
+    "end": 2390,
+    "synopsis": "Sisters, salt, thirty unsaid years in one kitchen scene.",
+    "threads": [
+      "heart"
+    ],
+    "title": "Family Fracture"
+  },
+  {
+    "characters": [
+      "Jonah",
+      "Maya"
+    ],
+    "familySafe": true,
+    "id": "s22",
+    "importance": 0.6,
+    "intensity": 2,
+    "plot": [
+      "heart"
+    ],
+    "required_after": [],
+    "start": 2390,
+    "end": 2440,
+    "synopsis": "Jonah picks a side and finally says it out loud.",
+    "threads": [
+      "heart"
+    ],
+    "title": "Jonah Chooses"
+  },
+  {
+    "characters": [
+      "Jonah",
+      "Detective Rao"
+    ],
+    "familySafe": false,
+    "id": "s23",
+    "importance": 0.62,
+    "intensity": 5,
+    "plot": [
+      "chase"
+    ],
+    "required_after": [],
+    "start": 2440,
+    "end": 2532,
+    "synopsis": "One last run through the moorings to beat the tide gate.",
+    "threads": [
+      "chase"
+    ],
+    "title": "The Long Run"
+  },
+  {
+    "characters": [
+      "Detective Rao",
+      "Maya"
+    ],
+    "familySafe": true,
+    "id": "s24",
+    "importance": 0.89,
+    "intensity": 3,
+    "plot": [
+      "resolution"
+    ],
+    "required_after": [
+      "s18"
+    ],
+    "start": 2532,
+    "end": 2736,
+    "synopsis": "The channel light is relit. Every thread ties off in one shot.",
+    "threads": [
+      "mystery",
+      "heart"
+    ],
+    "title": "Harbor Lights Resolution"
+  },
+  {
+    "characters": [
+      "Harbormaster",
+      "Jonah"
+    ],
+    "familySafe": true,
+    "id": "s25",
+    "importance": 0.5,
+    "intensity": 1,
+    "plot": [
+      "heart"
+    ],
+    "required_after": [],
+    "start": 2736,
+    "end": 2821,
+    "synopsis": "Knots, apologies, a rope that finally holds.",
+    "threads": [
+      "heart"
+    ],
+    "title": "Loose Rope"
+  },
+  {
+    "characters": [
+      "Maya",
+      "Lena"
+    ],
+    "familySafe": true,
+    "id": "s26",
+    "importance": 0.74,
+    "intensity": 3,
+    "plot": [
+      "twist"
+    ],
+    "required_after": [
+      "s18"
+    ],
+    "start": 2821,
+    "end": 2925,
+    "synopsis": "One page of the log was never torn out. It changes everything.",
+    "threads": [
+      "mystery"
+    ],
+    "title": "Final Tide Twist"
+  },
+  {
+    "characters": [
+      "Lena",
+      "Detective Rao"
+    ],
+    "familySafe": true,
+    "id": "s27",
+    "importance": 0.77,
+    "intensity": 3,
+    "plot": [
+      "resolution"
+    ],
+    "required_after": [
+      "s20"
+    ],
+    "start": 2925,
+    "end": 3015,
+    "synopsis": "A confession on the pier, no music, just gulls.",
+    "threads": [
+      "mystery",
+      "heart"
+    ],
+    "title": "Confession on the Pier"
+  },
+  {
+    "characters": [
+      "Maya",
+      "Jonah"
+    ],
+    "familySafe": true,
+    "id": "s28",
+    "importance": 0.81,
+    "intensity": 2,
+    "plot": [
+      "resolution"
+    ],
+    "required_after": [
+      "s24"
+    ],
+    "start": 3015,
+    "end": 3134,
+    "synopsis": "Dawn. The harbor exhales. The light does its job.",
+    "threads": [
+      "heart"
+    ],
+    "title": "Dawn Harbor"
+  }
+];

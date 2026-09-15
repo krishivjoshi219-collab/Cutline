@@ -1,0 +1,11 @@
+{
+  "name": "cutline-firetv",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CUTLINE — time-budgeted viewing routes for Fire TV. Amazon App Dev Hackathon 2026.",
+  "scripts": {
+    "test": "node tests/solver.test.cjs",
+    "serve": "python3 -m http.server 8080"
+  },
+  "engines": { "node": ">=16" }
+}
