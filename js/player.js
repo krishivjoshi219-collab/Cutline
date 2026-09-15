@@ -28,9 +28,12 @@
     this.simElapsed = 0; // seconds into current scene (episode time)
     this.cutElapsed = 0; // episode seconds already watched in this cut
     this._boundTime = this._onTime.bind(this);
+    this._boundEnded = this._onVideoEnded.bind(this);
+    this._boundError = this._onVideoError.bind(this);
     if (this.video) {
       this.video.addEventListener("timeupdate", this._boundTime);
-      this.video.addEventListener("ended", this._onVideoEnded.bind(this));
+      this.video.addEventListener("ended", this._boundEnded);
+      this.video.addEventListener("error", this._boundError);
     }
   }
 
@@ -44,9 +47,26 @@
     return (vidSec / this.video.duration) * this.episodeDuration;
   };
 
+  Player.prototype.destroy = function () {
+    this.stop();
+    if (this.video) {
+      try {
+        this.video.removeEventListener("timeupdate", this._boundTime);
+        this.video.removeEventListener("ended", this._boundEnded);
+        this.video.removeEventListener("error", this._boundError);
+      } catch (e) {}
+    }
+    this.video = null;
+    this.route = [];
+  };
+
+  Player.prototype._onVideoError = function () {
+    if (!this.simMode) this.simMode = true;
+  };
+
   Player.prototype.setRoute = function (routeScenes) {
     this.stop();
-    this.route = routeScenes.slice();
+    this.route = Array.isArray(routeScenes) ? routeScenes.slice() : [];
     this.index = -1;
     this.cutElapsed = 0;
     this.simElapsed = 0;
@@ -118,9 +138,11 @@
 
   Player.prototype._onTime = function () {
     if (!this.playing || this.simMode || this.index < 0) return;
+    if (!this.video || !isFinite(this.video.currentTime)) return;
     var scene = this.route[this.index];
     if (!scene) return;
     var endVid = this.mapToVideo(scene.end);
+    if (!isFinite(endVid) || endVid <= 0) return;
     if (this.video.currentTime >= endVid - END_TOLERANCE_SEC) {
       this.cutElapsed += scene.end - scene.start;
       this._goto(this.index + 1);
@@ -146,6 +168,7 @@
   // --- Simulation fallback (offline): real-time timer over episode seconds.
   Player.prototype._playSim = function () {
     var self = this;
+    if (!this.route.length) { this._finish(); return; }
     if (this.simTimer) clearInterval(this.simTimer);
     if (this.index < 0) {
       this.index = 0;
@@ -167,7 +190,9 @@
 
   Player.prototype._finish = function () {
     this.pause();
-    this.onEnded({ cutTotal: this.totalCut() });
+    try {
+      this.onEnded({ cutTotal: this.totalCut() });
+    } catch (e) {}
   };
 
   return Player;

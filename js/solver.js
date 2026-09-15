@@ -9,32 +9,45 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  function duration(s) { return s.end - s.start; }
-
   var IMPORTANCE_WEIGHT = 100;
   var PLOT_BONUS = { reveal: 12, resolution: 10, confrontation: 8, discovery: 6, twist: 5 };
   var THREAD_MATCH_BONUS = 30;
   var THREAD_MISMATCH_SCALE = 0.45;
+  var MAX_BUDGET_SEC = 6 * 60 * 60;
+  var MIN_FILL_SEC = 25;
+  var EPS = 1e-9;
+
+  function duration(s) {
+    if (!s || !isFinite(s.end) || !isFinite(s.start)) return 0;
+    return Math.max(0, s.end - s.start);
+  }
+  function asArray(v) { return Array.isArray(v) ? v : []; }
+  function density(score, w) { return w > 0 ? score / w : -Infinity; }
 
   // Score one scene for a given request. Deterministic, no randomness.
   function scoreScene(scene, opts) {
     opts = opts || {};
-    var score = scene.importance * IMPORTANCE_WEIGHT;
+    if (!scene) return 0;
+    var plot = asArray(scene.plot);
+    var threads = asArray(scene.threads);
+    var importance = isFinite(scene.importance) ? scene.importance : 0;
+    var intensity = isFinite(scene.intensity) ? scene.intensity : 3;
+    var score = importance * IMPORTANCE_WEIGHT;
     // Plot-beat prior: reveals / resolutions / confrontations carry the story.
-    if (scene.plot.indexOf("reveal") !== -1) score += PLOT_BONUS.reveal;
-    if (scene.plot.indexOf("resolution") !== -1) score += PLOT_BONUS.resolution;
-    if (scene.plot.indexOf("confrontation") !== -1) score += PLOT_BONUS.confrontation;
-    if (scene.plot.indexOf("discovery") !== -1) score += PLOT_BONUS.discovery;
-    if (scene.plot.indexOf("twist") !== -1) score += PLOT_BONUS.twist;
+    if (plot.indexOf("reveal") !== -1) score += PLOT_BONUS.reveal;
+    if (plot.indexOf("resolution") !== -1) score += PLOT_BONUS.resolution;
+    if (plot.indexOf("confrontation") !== -1) score += PLOT_BONUS.confrontation;
+    if (plot.indexOf("discovery") !== -1) score += PLOT_BONUS.discovery;
+    if (plot.indexOf("twist") !== -1) score += PLOT_BONUS.twist;
     // Thread lens: requested thread wins, others are down-weighted (not zeroed,
     // so dependency bridges can still survive).
     if (opts.thread && opts.thread !== "all") {
-      if (scene.threads.indexOf(opts.thread) !== -1) score += THREAD_MATCH_BONUS;
+      if (threads.indexOf(opts.thread) !== -1) score += THREAD_MATCH_BONUS;
       else score *= THREAD_MISMATCH_SCALE;
     }
     // Mood: "intense" boosts high-intensity scenes, "gentle" the opposite.
-    if (opts.mood === "intense") score += (scene.intensity || 3) * 3;
-    if (opts.mood === "gentle") score += (6 - (scene.intensity || 3)) * 3;
+    if (opts.mood === "intense") score += intensity * 3;
+    if (opts.mood === "gentle") score += (6 - intensity) * 3;
     return score;
   }
 
@@ -43,12 +56,13 @@
   // that aired before the stop point count as already watched).
   function closeDependencies(ids, byId, skipDep) {
     var closed = {};
-    ids.forEach(function (id) { closed[id] = true; });
+    asArray(ids).forEach(function (id) { if (byId[id]) closed[id] = true; });
     var changed = true, guard = 0;
     while (changed && guard++ < 50) {
       changed = false;
       Object.keys(closed).forEach(function (id) {
-        (byId[id].required_after || []).forEach(function (dep) {
+        if (!byId[id]) return;
+        asArray(byId[id].required_after).forEach(function (dep) {
           if (skipDep && skipDep(dep)) return;
           if (byId[dep] && !closed[dep]) { closed[dep] = true; changed = true; }
         });
@@ -58,11 +72,11 @@
   }
 
   function sumDuration(ids, byId) {
-    return ids.reduce(function (t, id) { return t + duration(byId[id]); }, 0);
+    return asArray(ids).reduce(function (t, id) { return t + duration(byId[id]); }, 0);
   }
 
   function sumScore(ids, byId, scores) {
-    return ids.reduce(function (t, id) { return t + scores[id]; }, 0);
+    return asArray(ids).reduce(function (t, id) { return t + (isFinite(scores[id]) ? scores[id] : 0); }, 0);
   }
 
   /* Build a route: ordered scene list with totalDuration <= budgetSec.
@@ -71,6 +85,12 @@
    */
   function buildRoute(scenes, budgetSec, opts) {
     opts = opts || {};
+    scenes = asArray(scenes).filter(function (s) { return s && s.id != null; });
+    budgetSec = Math.max(0, Math.floor(isFinite(budgetSec) ? budgetSec : 0));
+    if (budgetSec > MAX_BUDGET_SEC) budgetSec = MAX_BUDGET_SEC;
+    if (!scenes.length) {
+      return { scenes: [], ids: [], totalDuration: 0, totalScore: 0, budgetSec: budgetSec, coverage: 0, bridgeId: null };
+    }
     var byId = {};
     scenes.forEach(function (s) { byId[s.id] = s; });
 

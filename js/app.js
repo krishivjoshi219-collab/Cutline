@@ -53,8 +53,11 @@
   }
 
   function impDots(imp) {
-    var n = Math.max(1, Math.round(imp * 5));
-    return "●".repeat(n) + "○".repeat(5 - n);
+    var n = Math.max(1, Math.min(5, Math.round((isFinite(imp) ? imp : 0) * 5)));
+    var s = "", i;
+    for (i = 0; i < n; i++) s += "●";
+    for (i = n; i < 5; i++) s += "○";
+    return s;
   }
 
   function renderPreview() {
@@ -85,7 +88,7 @@
       var li = document.createElement("li");
       li.innerHTML = "<span class='rng'>" + S.fmtRange(sc) + "</span>" +
         "<span><span class='ttl'>" + escapeHtml(sc.title) + "</span><br>" +
-        "<span class='meta'>" + S.fmt(sc.end - sc.start) + " · " + sc.threads.join(" / ") + " · " + sc.plot.join(", ") + " · " + escapeHtml(sc.synopsis) + "</span></span>" +
+        "<span class='meta'>" + S.fmt(sc.end - sc.start) + " · " + escapeHtml(sc.threads.join(" / ")) + " · " + escapeHtml(sc.plot.join(", ")) + " · " + escapeHtml(sc.synopsis) + "</span></span>" +
         "<span class='imp' title='narrative importance " + sc.importance + "'>" + impDots(sc.importance) + "</span>";
       ul.appendChild(li);
       prev = sc;
@@ -112,10 +115,10 @@
     refreshFocusables();
   }
 
-  var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+  var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 
   function escapeHtml(s) {
-    return String(s).replace(/[&<>"]/g, function (c) { return HTML_ESCAPES[c]; });
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return HTML_ESCAPES[c]; });
   }
 
   /* ---------- controls ---------- */
@@ -268,8 +271,9 @@
     $("playTitle").innerHTML = escapeHtml(routeLabel()) + " <span>— now playing original footage</span>";
     // (Re)bind the sample asset; mapping handles episode→video time.
     if (!video.currentSrc) {
-      video.src = window.DEMO_VIDEO_SOURCES[0];
-      video.load();
+      var src = window.DEMO_VIDEO_SOURCES && window.DEMO_VIDEO_SOURCES[0];
+      if (src) { try { video.src = src; video.load(); } catch (e) {} }
+      else if (player) { player.simMode = true; }
     }
     video.hidden = false; canvas.hidden = true;
     player.setRoute(state.route.scenes);
@@ -300,10 +304,12 @@
     $("bannerTitle").textContent = scene.title;
     renderUpnext(i);
   }
+  var toastTimer = null;
   function onTransition(scene) {
     $("toastTitle").textContent = S.fmtRange(scene) + " · " + scene.title;
     $("transitionToast").classList.add("show");
-    setTimeout(function () { $("transitionToast").classList.remove("show"); }, 1400);
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { $("transitionToast").classList.remove("show"); toastTimer = null; }, 1400);
   }
   function onProgress(p) {
     var done = Math.min(p.cutElapsed, p.cutTotal);
