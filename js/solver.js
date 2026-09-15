@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  var VERSION = "1.0.0";
+  var VERSION = "1.1.0";
   var IMPORTANCE_WEIGHT = 100;
   var PLOT_BONUS = { reveal: 12, resolution: 10, confrontation: 8, discovery: 6, twist: 5 };
   var THREAD_MATCH_BONUS = 30;

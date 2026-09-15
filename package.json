@@ -10,5 +10,7 @@
     "lint": "node -c js/solver.js && node -c js/player.js && node -c js/app.js && node -c js/scenes.js && node -c js/episode.js && echo OK"
   },
   "engines": { "node": ">=16" },
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": ["fire-tv", "hackathon", "video", "knapsack", "10-foot-ui"],
+  "homepage": "https://example.com/cutline"
 }

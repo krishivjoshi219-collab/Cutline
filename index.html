@@ -3,19 +3,45 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="CUTLINE — time-budgeted viewing routes. Keep the story, cut the wandering.">
+<meta name="description" content="CUTLINE — one click. Your 52-min episode becomes a 15-min story you can actually finish.">
 <meta name="theme-color" content="#070d24">
-<title>CUTLINE — I have 15 minutes. Give me the story.</title>
+<meta property="og:title" content="CUTLINE — Not a recap. A version you can finish.">
+<meta property="og:description" content="52:14 → 15:00 in one click. Zero FOMO. Fire TV demo.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2322d3ee'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='18' font-weight='900'%3E%E2%9C%82%3C/text%3E%3C/svg%3E">
+<title>CUTLINE — One click. Give me the story.</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <a class="skip-link" href="#routeTitle">Skip to story route</a>
 <noscript><div class="empty" style="margin:16px 48px">CUTLINE needs JavaScript to build time-budgeted cuts.</div></noscript>
+<div class="hype-ticker" aria-hidden="true"><div class="hype-ticker-track"><span>52:14 → 15:00 · ZERO FOMO</span><span>✂ NOT A RECAP — A VERSION YOU CAN FINISH</span><span>🔥 28 SCENES → ONE COHERENT CUT</span><span>⚡ ONE CLICK → PLAYING</span><span>52:14 → 15:00 · ZERO FOMO</span><span>✂ NOT A RECAP — A VERSION YOU CAN FINISH</span><span>🔥 28 SCENES → ONE COHERENT CUT</span><span>⚡ ONE CLICK → PLAYING</span></div></div>
 <header class="topbar">
-  <div class="logo">CUTLINE</div>
+  <div class="logo">CUTLINE<span class="logo-live">LIVE DEMO</span></div>
   <div class="tagline">Keep the story. Cut the wandering. <b>Not a recap — a version you can finish.</b></div>
   <div class="episode-badge"><b id="epTitle">HARBOR LIGHTS · S01E07</b><span id="epMeta">Full episode 52:14 · 28 scenes · Fire TV demo</span></div>
 </header>
+<section class="hero-one-click" aria-label="One-click cut">
+  <div class="hero-copy">
+    <p class="hero-eyebrow">🔥 HACKATHON BUILD · FIRE TV TRACK · WORKS OFFLINE</p>
+    <h1 class="hero-h1">Too busy for 52 minutes?<br><span>Get the whole story in 15.</span></h1>
+    <p class="hero-sub">One click. CUTLINE keeps the reveal, the confrontation, the payoff — and cuts the wandering. No settings. No spoilers. Just press play.</p>
+    <div class="one-click-row">
+      <button id="oneClickPlay" class="btn gold mega pulse focusable">▶ Give me my 15-min cut</button>
+      <div class="one-click-presets" role="group" aria-label="One-click presets">
+        <button class="pill focusable" data-oneclick="300">5 min</button>
+        <button class="pill focusable" data-oneclick="900">15 min</button>
+        <button class="pill focusable" data-oneclick="1800">30 min</button>
+      </div>
+    </div>
+    <p class="trust-row"><span>✓ <b id="savedBadgeHero">37 min saved</b> tonight</span><span>✓ No recap voiceover</span><span>✓ Original footage</span></p>
+  </div>
+  <div class="hero-proof card" aria-hidden="true">
+    <div class="proof-big"><b>52:14</b><span>→</span><b class="gold-text">15:00</b></div>
+    <div class="proof-bar"><div style="width:29%"></div></div>
+    <div class="proof-meta">8 scenes kept · 3 jumps · 100% story holds</div>
+  </div>
+</section>
 
 <main>
   <!-- ============ SCREEN: CHOOSE ============ -->
@@ -98,7 +124,9 @@
           <ul class="route-list" id="routeList" aria-live="polite" aria-busy="false"></ul>
           <div class="row">
             <button class="btn gold focusable" id="playBtn">▶ Play this cut</button>
+            <button class="btn ghost focusable" id="shareBtn" title="Copy link to this cut">⧉ Share</button>
             <button class="btn ghost focusable" id="techBtn">Algorithm + JSON</button>
+            <span class="saved-badge" id="savedBadge" aria-live="polite"></span>
           </div>
         </div>
       </div>
@@ -148,8 +176,9 @@
 
 <footer>
   Remote: <kbd>◀ ▲ ▼ ▶</kbd> move · <kbd>OK / Enter</kbd> select · <kbd>Backspace / Esc</kbd> back · <kbd>Space</kbd> play/pause &nbsp;·&nbsp;
-  CUTLINE · Fire TV track · Amazon App Dev Hackathon 2026 · “Not a recap. A version you can finish.”
+  CUTLINE · Fire TV track · Amazon App Dev Hackathon 2026 · “Not a recap. A version you can finish.” &nbsp;·&nbsp; Made for busy humans.
 </footer>
+<div id="stickyPlay" hidden><span id="stickyText">15:00 cut ready · 37 min saved</span><button class="btn gold focusable" id="stickyGo">▶ Play now</button></div>
 
 <script defer src="js/solver.js"></script>
 <script defer src="js/episode.js"></script>

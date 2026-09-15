@@ -18,6 +18,20 @@
   };
 
   function $(id) { return document.getElementById(id); }
+  function fmtSaved(sec) {
+    var m = Math.round(sec / 60);
+    return m <= 0 ? "0 min saved" : m + " min saved";
+  }
+  function updateSavedBadges() {
+    if (!state.route) return;
+    var saved = Math.max(0, EP.durationSec - state.route.totalDuration);
+    var txt = "✓ " + fmtSaved(saved) + " · " + state.route.scenes.length + " scenes";
+    var b = $("savedBadge"); if (b) b.textContent = txt;
+    var h = $("savedBadgeHero"); if (h) h.textContent = fmtSaved(saved);
+    var st = $("stickyText"); if (st) st.textContent = routeLabel() + " ready · " + fmtSaved(saved);
+    var sticky = $("stickyPlay");
+    if (sticky) sticky.hidden = !$("screen-choose") || $("screen-choose").hidden;
+  }
   function budgetSec() {
     return state.budget === "full" ? EP.durationSec : state.budget;
   }
@@ -76,6 +90,7 @@
     $("coverageBar").style.width = Math.min(100, r.coverage * 100).toFixed(1) + "%";
     $("coverageText").textContent = Math.round(r.coverage * 100) + "% of episode kept";
     $("morphVal").textContent = S.fmt(budgetSec());
+    updateSavedBadges();
 
     // List with visible jumps between non-adjacent scenes.
     var ul = $("routeList"); ul.innerHTML = "";
@@ -447,8 +462,41 @@
     return;
   }
   $("epTitle").textContent = EP.title.toUpperCase() + " · S01E07";
+  try {
+    var prefs = JSON.parse(localStorage.getItem("cutline:v1") || "{}");
+    if (prefs.budget === "full" || (isFinite(prefs.budget) && prefs.budget >= 60)) state.budget = prefs.budget;
+    if (prefs.thread) state.thread = prefs.thread;
+    if (prefs.intense) state.intense = !!prefs.intense;
+    if (prefs.kidsOnly) state.kidsOnly = !!prefs.kidsOnly;
+    if (state.thread) document.querySelectorAll("#threadRow .pill").forEach(function (el) {
+      el.setAttribute("aria-pressed", el.dataset.thread === state.thread ? "true" : "false");
+    });
+    if (state.intense) { $("moodBtn").textContent = "INTENSE: on"; $("moodBtn").setAttribute("aria-pressed", "true"); }
+    if (state.kidsOnly) { $("kidsBtn").textContent = "KIDS-SAFE: on"; $("kidsBtn").setAttribute("aria-pressed", "true"); }
+  } catch (e) {}
   syncBudgetUI();
   rebuild();
+  function oneClick(sec) {
+    state.budget = sec; state.thread = "all"; state.afterSec = null;
+    document.querySelectorAll("#threadRow .pill").forEach(function (el) {
+      el.setAttribute("aria-pressed", el.dataset.thread === "all" ? "true" : "false");
+    });
+    syncBudgetUI(); rebuild();
+    $("playBtn").click();
+  }
+  var oc = $("oneClickPlay"); if (oc) oc.addEventListener("click", function () { oneClick(900); });
+  document.querySelectorAll("[data-oneclick]").forEach(function (b) {
+    b.addEventListener("click", function () { oneClick(parseInt(b.dataset.oneclick, 10)); });
+  });
+  var stickyGo = $("stickyGo"); if (stickyGo) stickyGo.addEventListener("click", function () { $("playBtn").click(); });
+  var share = $("shareBtn"); if (share) share.addEventListener("click", function () {
+    var txt = "CUTLINE " + routeLabel() + " — " + state.route.ids.join(",") + " (" + S.fmt(state.route.totalDuration) + ")";
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt);
+    } catch (e) {}
+    share.textContent = "✓ Copied!";
+    setTimeout(function () { share.textContent = "⧉ Share"; }, 1400);
+  });
   refreshFocusables();
-  setFocus(document.querySelector('#budgetCards [data-budget="900"]'));
+  setFocus($("oneClickPlay") || document.querySelector('#budgetCards [data-budget="900"]'));
 })();
