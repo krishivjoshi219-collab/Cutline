@@ -112,10 +112,10 @@
     refreshFocusables();
   }
 
+  var HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+
   function escapeHtml(s) {
-    return String(s).replace(/[&<>"]/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
-    });
+    return String(s).replace(/[&<>"]/g, function (c) { return HTML_ESCAPES[c]; });
   }
 
   /* ---------- controls ---------- */

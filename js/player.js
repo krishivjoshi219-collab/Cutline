@@ -9,6 +9,9 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
+  var END_TOLERANCE_SEC = 0.12;
+  var SIM_TICK_MS = 1000;
+
   function Player(videoEl, opts) {
     opts = opts || {};
     this.video = videoEl || null;
@@ -89,7 +92,6 @@
   };
   Player.prototype.prev = function () {
     if (this.index <= 0) { this._goto(0); return; }
-    this.cutElapsed -= 0; // keep simple: recompute below
     this._goto(this.index - 1, true);
   };
 
@@ -100,7 +102,8 @@
       this.cutElapsed = 0;
       for (var k = 0; k < i; k++) this.cutElapsed += this.route[k].end - this.route[k].start;
     }
-    var jumping = this.index >= 0 && i !== this.index + 0;
+    var isSequential = this.index >= 0 && i === this.index + 1;
+    var jumping = this.index >= 0 && !isSequential && i !== this.index;
     this.index = i;
     this.simElapsed = 0;
     var scene = this.route[i];
@@ -118,7 +121,7 @@
     var scene = this.route[this.index];
     if (!scene) return;
     var endVid = this.mapToVideo(scene.end);
-    if (this.video.currentTime >= endVid - 0.12) {
+    if (this.video.currentTime >= endVid - END_TOLERANCE_SEC) {
       this.cutElapsed += scene.end - scene.start;
       this._goto(this.index + 1);
     } else {
@@ -159,7 +162,7 @@
         self.simElapsed = 0;
         self._goto(self.index + 1);
       }
-    }, 1000);
+    }, SIM_TICK_MS);
   };
 
   Player.prototype._finish = function () {

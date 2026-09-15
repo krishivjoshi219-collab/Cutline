@@ -11,21 +11,26 @@
 
   function duration(s) { return s.end - s.start; }
 
+  var IMPORTANCE_WEIGHT = 100;
+  var PLOT_BONUS = { reveal: 12, resolution: 10, confrontation: 8, discovery: 6, twist: 5 };
+  var THREAD_MATCH_BONUS = 30;
+  var THREAD_MISMATCH_SCALE = 0.45;
+
   // Score one scene for a given request. Deterministic, no randomness.
   function scoreScene(scene, opts) {
     opts = opts || {};
-    var score = scene.importance * 100;
+    var score = scene.importance * IMPORTANCE_WEIGHT;
     // Plot-beat prior: reveals / resolutions / confrontations carry the story.
-    if (scene.plot.indexOf("reveal") !== -1) score += 12;
-    if (scene.plot.indexOf("resolution") !== -1) score += 10;
-    if (scene.plot.indexOf("confrontation") !== -1) score += 8;
-    if (scene.plot.indexOf("discovery") !== -1) score += 6;
-    if (scene.plot.indexOf("twist") !== -1) score += 5;
+    if (scene.plot.indexOf("reveal") !== -1) score += PLOT_BONUS.reveal;
+    if (scene.plot.indexOf("resolution") !== -1) score += PLOT_BONUS.resolution;
+    if (scene.plot.indexOf("confrontation") !== -1) score += PLOT_BONUS.confrontation;
+    if (scene.plot.indexOf("discovery") !== -1) score += PLOT_BONUS.discovery;
+    if (scene.plot.indexOf("twist") !== -1) score += PLOT_BONUS.twist;
     // Thread lens: requested thread wins, others are down-weighted (not zeroed,
     // so dependency bridges can still survive).
     if (opts.thread && opts.thread !== "all") {
-      if (scene.threads.indexOf(opts.thread) !== -1) score += 30;
-      else score *= 0.45;
+      if (scene.threads.indexOf(opts.thread) !== -1) score += THREAD_MATCH_BONUS;
+      else score *= THREAD_MISMATCH_SCALE;
     }
     // Mood: "intense" boosts high-intensity scenes, "gentle" the opposite.
     if (opts.mood === "intense") score += (scene.intensity || 3) * 3;
