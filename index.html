@@ -20,6 +20,7 @@
   <div class="logo">CUTLINE<span class="logo-live">LIVE DEMO</span></div>
   <div class="tagline">Keep the story. Cut the wandering. <b>Not a recap — a version you can finish.</b></div>
   <div class="episode-badge"><b id="epTitle">HARBOR LIGHTS · S01E07</b><span id="epMeta">Full episode 52:14 · 28 scenes · Fire TV demo</span></div>
+  <nav class="topnav" aria-label="Launcher nav"><button class="pill focusable" id="navHome" aria-pressed="true">Home</button><button class="pill focusable" id="navCuts" aria-pressed="false">Cuts</button><button class="pill focusable" id="navPlay" aria-pressed="false">Now playing</button></nav>
 </header>
 <section class="hero-one-click" aria-label="One-click cut">
   <div class="hero-copy">
@@ -44,8 +45,46 @@
 </section>
 
 <main>
+  <!-- ============ SCREEN: HOME (LAUNCHER) ============ -->
+  <section id="screen-home" class="screen" aria-label="Cutline home">
+    <div class="launch-hero card">
+      <div class="launch-art" aria-hidden="true"><div class="launch-glow"></div><div class="launch-cutline">✂</div></div>
+      <div class="launch-copy">
+        <p class="hero-eyebrow">CUTLINE LAUNCHER · PICK UP WHERE YOU LEFT OFF</p>
+        <h2 class="launch-title" id="launchTitle">Harbor Lights S01E07</h2>
+        <p class="launch-meta" id="launchMeta">52:14 · 28 scenes · 4K · Original audio</p>
+        <p class="hero-sub">Not a recap. A version you can finish. Pick a time, hit play — story holds.</p>
+        <div class="one-click-row">
+          <button id="launchPlay" class="btn gold mega pulse focusable">▶ Play 15-min cut</button>
+          <button id="launchBrowse" class="btn ghost focusable">Browse cuts</button>
+          <button id="launchCatchup" class="btn ghost focusable">Catch me up from 23:10</button>
+        </div>
+        <div class="launch-continue" id="continueWrap" hidden>
+          <div class="cont-bar"><div id="contFill"></div></div>
+          <div class="row"><span id="contText" style="color:var(--muted)"></span><button id="contResume" class="chip focusable">Resume ▶</button><button id="contRestart" class="chip focusable">Restart</button></div>
+        </div>
+      </div>
+    </div>
+    <h2 class="section-title">One-tap cuts</h2>
+    <div class="rail" id="cutsRail" role="group" aria-label="One-tap cuts">
+      <button class="tap-card focusable" data-launch="300"><b>5:00</b><span>Essentials</span><small>reveal only</small></button>
+      <button class="tap-card focusable" data-launch="900"><b>15:00</b><span>Story ★</span><small>8 scenes · signature</small></button>
+      <button class="tap-card focusable" data-launch="1800"><b>30:00</b><span>Deep cut</span><small>strong coverage</small></button>
+      <button class="tap-card focusable" data-launch="full"><b>52:14</b><span>Full</span><small>every scene</small></button>
+    </div>
+    <h2 class="section-title">Browse by vibe</h2>
+    <div class="rail" id="vibeRail" role="group" aria-label="Browse by vibe">
+      <button class="tap-card vibe focusable" data-vibe="mystery">🔍<span>Mystery</span></button>
+      <button class="tap-card vibe focusable" data-vibe="heart">💛<span>Heart</span></button>
+      <button class="tap-card vibe focusable" data-vibe="chase">⚡<span>Chase</span></button>
+      <button class="tap-card vibe focusable" data-vibe="intense">🔥<span>Intense</span></button>
+      <button class="tap-card vibe focusable" data-vibe="kids">🛟<span>Kids-safe</span></button>
+    </div>
+    <h2 class="section-title">My cuts <small id="histClear" style="float:right"><button class="chip focusable" id="clearHist">clear</button></small></h2>
+    <div class="rail" id="histRail" aria-live="polite"><div class="empty">No cuts yet — hit Play and we'll save it here.</div></div>
+  </section>
   <!-- ============ SCREEN: CHOOSE ============ -->
-  <section id="screen-choose" class="screen" aria-label="Choose your cut">
+  <section id="screen-choose" class="screen" aria-label="Choose your cut" hidden>
     <p class="hero-line">I have <span id="heroBudget">15 minutes</span>. Give me the story.</p>
 
     <div class="choose-grid">

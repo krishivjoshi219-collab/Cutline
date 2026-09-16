@@ -14,8 +14,29 @@
     kidsOnly: false,
     afterSec: null,         // re-entry stop point
     excluded: {},           // sceneId -> true (heatmap toggles)
+    spoiler: true,          // spoiler guard on by default
     route: null
   };
+  function lsGet(k, fb) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch (e) { return fb; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function getHist() { return lsGet("cutline:history:v2", []); }
+  function pushHist() {
+    if (!state.route || !state.route.scenes.length) return;
+    var h = getHist();
+    h.unshift({ t: Date.now(), label: routeLabel(), dur: state.route.totalDuration, n: state.route.scenes.length, budget: state.budget, thread: state.thread, intense: state.intense, kidsOnly: state.kidsOnly, ids: state.route.ids.slice(0, 24) });
+    lsSet("cutline:history:v2", h.slice(0, 8));
+    renderLauncher();
+  }
+  function encodeCut() {
+    var p = { b: state.budget, t: state.thread, i: state.intense ? 1 : 0, k: state.kidsOnly ? 1 : 0, a: state.afterSec, x: Object.keys(state.excluded).filter(function (k) { return state.excluded[k]; }) };
+    return "#c=" + btoa(unescape(encodeURIComponent(JSON.stringify(p)))).replace(/=+$/, "");
+  }
+  function decodeCut() {
+    try {
+      if (!location.hash || location.hash.indexOf("#c=") !== 0) return null;
+      return JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(3)))));
+    } catch (e) { return null; }
+  }
 
   function $(id) { return document.getElementById(id); }
   function fmtSaved(sec) {
@@ -286,11 +307,52 @@
   }
 
   function show(screen) {
+    $("screen-home").hidden = screen !== "home";
     $("screen-choose").hidden = screen !== "choose";
     $("screen-play").hidden = screen !== "play";
+    ["navHome", "navCuts", "navPlay"].forEach(function (id) { var el = $(id); if (el) el.setAttribute("aria-pressed", "false"); });
+    var nav = screen === "home" ? $("navHome") : screen === "choose" ? $("navCuts") : $("navPlay");
+    if (nav) nav.setAttribute("aria-pressed", "true");
+    document.body.classList.toggle("spoiler-on", !!state.spoiler);
     refreshFocusables();
-    var first = (screen === "play" ? $("screen-play") : $("screen-choose")).querySelector(".focusable");
+    var root = screen === "play" ? $("screen-play") : screen === "choose" ? $("screen-choose") : $("screen-home");
+    updateSavedBadges();
+    var first = root.querySelector(".focusable");
     if (first) setFocus(first);
+    if (screen === "home") renderLauncher();
+  }
+  function renderLauncher() {
+    var prog = lsGet("cutline:progress:v1", null);
+    var wrap = $("continueWrap");
+    if (wrap) {
+      var showCont = !!(prog && prog.cutTotal > 30 && prog.done < prog.cutTotal - 5);
+      wrap.hidden = !showCont;
+      if (showCont) {
+        $("contFill").style.width = Math.round((prog.done / prog.cutTotal) * 100) + "%";
+        $("contText").textContent = "Continue " + S.fmt(prog.done) + " / " + S.fmt(prog.cutTotal) + " · " + prog.label;
+      }
+    }
+    var rail = $("histRail");
+    if (rail) {
+      var h = getHist(); rail.innerHTML = "";
+      if (!h.length) { rail.innerHTML = '<div class="empty">No cuts yet — hit Play and we\'ll save it here.</div>'; return; }
+      h.forEach(function (item) {
+        var b = document.createElement("button");
+        b.className = "tap-card hist-card focusable";
+        b.innerHTML = "<b>" + S.fmt(item.dur) + "</b><span>" + escapeHtml(item.label) + "</span><small>" + item.n + " scenes · " + escapeHtml(item.thread) + (item.intense ? " · intense" : "") + "</small>";
+        b.addEventListener("click", function () {
+          state.budget = item.budget; state.thread = item.thread; state.intense = !!item.intense; state.kidsOnly = !!item.kidsOnly; state.afterSec = null; state.excluded = {};
+          syncBudgetUI(); syncThreadUI(); rebuild(); show("choose");
+        });
+        rail.appendChild(b);
+      });
+      refreshFocusables();
+    }
+  }
+  function syncThreadUI() {
+    document.querySelectorAll("#threadRow .pill").forEach(function (el) {
+      el.setAttribute("aria-pressed", el.dataset.thread === state.thread ? "true" : "false");
+    });
   }
 
   $("playBtn").addEventListener("click", function () {
@@ -351,6 +413,7 @@
     $("cutElapsed").textContent = S.fmt(done);
     $("cutRemain").textContent = S.fmt(p.cutTotal - done);
     $("epPos").textContent = S.fmt(p.epNow != null ? p.epNow : p.scene.start);
+    lsSet("cutline:progress:v1", { done: Math.round(done), cutTotal: Math.round(p.cutTotal), label: routeLabel(), at: Date.now() });
   }
   function onEnded() {
     $("ppBtn").textContent = "▶ Replay cut";
@@ -497,6 +560,75 @@
     share.textContent = "✓ Copied!";
     setTimeout(function () { share.textContent = "⧉ Share"; }, 1400);
   });
+  // Launcher wiring
+  var savedHash = decodeCut();
+  if (savedHash) {
+    if (savedHash.b === "full" || isFinite(savedHash.b)) state.budget = savedHash.b;
+    if (savedHash.t) state.thread = savedHash.t;
+    state.intense = !!savedHash.i; state.kidsOnly = !!savedHash.k; state.afterSec = savedHash.a || null;
+    (savedHash.x || []).forEach(function (id) { state.excluded[id] = true; });
+  }
+  syncBudgetUI(); syncThreadUI();
+  if (state.intense) { $("moodBtn").textContent = "INTENSE: on"; $("moodBtn").setAttribute("aria-pressed", "true"); }
+  if (state.kidsOnly) { $("kidsBtn").textContent = "KIDS-SAFE: on"; $("kidsBtn").setAttribute("aria-pressed", "true"); }
+  function goPlay(budget) {
+    state.budget = budget; state.afterSec = null;
+    syncBudgetUI(); rebuild(); pushHistSafe(); $("playBtn").click();
+  }
+  var _pushed = false;
+  function pushHistSafe() { _pushed = true; }
+  var _origPlay = $("playBtn").onclick;
+  // nav
+  $("navHome").addEventListener("click", function () { show("home"); });
+  $("navCuts").addEventListener("click", function () { show("choose"); });
+  $("navPlay").addEventListener("click", function () { if (state.route) { show("play"); } });
+  $("launchBrowse").addEventListener("click", function () { show("choose"); });
+  $("launchPlay").addEventListener("click", function () { goPlay(900); });
+  $("launchCatchup").addEventListener("click", function () { applyNL("I stopped at 23:10 yesterday, catch me up in 8 minutes"); show("choose"); });
+  document.querySelectorAll("[data-launch]").forEach(function (b) {
+    b.addEventListener("click", function () { goPlay(b.dataset.launch === "full" ? "full" : parseInt(b.dataset.launch, 10)); });
+  });
+  document.querySelectorAll("[data-vibe]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var v = b.dataset.vibe;
+      if (v === "intense") { state.intense = true; $("moodBtn").textContent = "INTENSE: on"; $("moodBtn").setAttribute("aria-pressed", "true"); }
+      else if (v === "kids") { state.kidsOnly = true; $("kidsBtn").textContent = "KIDS-SAFE: on"; $("kidsBtn").setAttribute("aria-pressed", "true"); }
+      else { state.thread = v; syncThreadUI(); }
+      state.budget = 900; syncBudgetUI(); rebuild(); show("choose");
+    });
+  });
+  $("clearHist").addEventListener("click", function () { lsSet("cutline:history:v2", []); renderLauncher(); });
+  var _contR = $("contResume"); if (_contR) _contR.addEventListener("click", function () { show("choose"); $("playBtn").click(); });
+  var _contX = $("contRestart"); if (_contX) _contX.addEventListener("click", function () { lsSet("cutline:progress:v1", null); renderLauncher(); });
+  // wrap original play to save history + share hash
+  $("playBtn").addEventListener("click", function () {
+    setTimeout(function () {
+      try {
+        pushHist();
+        history.replaceState(null, "", encodeCut());
+        lsSet("cutline:progress:v1", { done: 0, cutTotal: Math.round(state.route.totalDuration), label: routeLabel(), at: Date.now() });
+      } catch (e) {}
+    }, 0);
+  }, true);
+  var _share = $("shareBtn");
+  if (_share) _share.addEventListener("click", function () {
+    try { history.replaceState(null, "", encodeCut()); } catch (e) {}
+  }, true);
+  // spoiler toggle injected into route head
+  var _rh = document.querySelector(".route-head");
+  if (_rh && !$("spoilerBtn")) {
+    var _sb = document.createElement("button");
+    _sb.id = "spoilerBtn"; _sb.className = "chip focusable"; _sb.textContent = "Spoilers: hidden";
+    _sb.addEventListener("click", function () {
+      state.spoiler = !state.spoiler;
+      document.body.classList.toggle("spoiler-on", !!state.spoiler);
+      _sb.textContent = state.spoiler ? "Spoilers: hidden" : "Spoilers: shown";
+    });
+    _rh.appendChild(_sb);
+    document.body.classList.toggle("spoiler-on", !!state.spoiler);
+  }
   refreshFocusables();
-  setFocus($("oneClickPlay") || document.querySelector('#budgetCards [data-budget="900"]'));
+  show(savedHash ? "choose" : "home");
+  if (savedHash) rebuild();
+  setFocus($("launchPlay") || $("oneClickPlay"));
 })();
