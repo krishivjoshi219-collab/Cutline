@@ -49,5 +49,15 @@
       return c.title.toLowerCase().indexOf(q) !== -1 || c.note.toLowerCase().indexOf(q) !== -1 || q.split(/\s+/).some(function (w) { return w && c.title.toLowerCase().indexOf(w) !== -1; });
     });
   }
-  return { PROVIDERS: PROVIDERS, CATALOG: CATALOG, getConnected: getConnected, setConnected: setConnected, byId: byId, deepLink: deepLink, tryOpen: tryOpen, searchCatalog: searchCatalog };
+  function watchlistKey() { return "cutline:ott:watchlist:v1"; }
+  function getWatchlist() { try { return JSON.parse(localStorage.getItem(watchlistKey()) || "[]"); } catch (e) { return []; } }
+  function toggleWatch(title) {
+    var w = getWatchlist();
+    var i = w.indexOf(title);
+    if (i === -1) w.unshift(title); else w.splice(i, 1);
+    try { localStorage.setItem(watchlistKey(), JSON.stringify(w.slice(0, 20))); } catch (e) {}
+    return getWatchlist();
+  }
+  function isInWatchlist(title) { return getWatchlist().indexOf(title) !== -1; }
+  return { PROVIDERS: PROVIDERS, CATALOG: CATALOG, getConnected: getConnected, setConnected: setConnected, byId: byId, deepLink: deepLink, tryOpen: tryOpen, searchCatalog: searchCatalog, getWatchlist: getWatchlist, toggleWatch: toggleWatch, isInWatchlist: isInWatchlist };
 });

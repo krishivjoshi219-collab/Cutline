@@ -737,7 +737,94 @@
     var sm = $("setMotion"); if (sm) sm.addEventListener("change", function () { document.body.classList.toggle("reduce-motion", sm.checked); });
     var ss = $("setSpoiler"); if (ss) ss.addEventListener("change", function () { state.spoiler = ss.checked; document.body.classList.toggle("spoiler-on", state.spoiler); });
   }
+  function initFireOSBuiltIn() {
+    try {
+      var prof = FTV ? FTV.deviceProfile() : null;
+      var sd = $("sysDevice"); if (sd && prof) sd.textContent = prof.model;
+      var tick = function () { var c = $("sysClock"); if (c && FTV) c.textContent = FTV.systemTime(); };
+      tick(); setInterval(tick, 15000);
+      var sn = $("sysNet"); if (sn) sn.textContent = navigator.onLine === false ? "Offline" : "Online";
+      window.addEventListener("online", function () { var x = $("sysNet"); if (x) x.textContent = "Online"; });
+      window.addEventListener("offline", function () { var x2 = $("sysNet"); if (x2) x2.textContent = "Offline · cuts still work"; });
+    } catch (e) {}
+    function paintRecents() {
+      var box = $("fireRecents"); if (!box || !FTV) return;
+      var r = FTV.getRecents(); box.innerHTML = "";
+      if (!r.length) { box.innerHTML = '<div class="empty">Nothing yet — your cuts will live here like a built-in channel.</div>'; return; }
+      r.forEach(function (it) {
+        var b = document.createElement("button");
+        b.className = "fire-card focusable";
+        b.innerHTML = "<b>" + escapeHtml(it.label) + "</b><small>" + escapeHtml(S.fmt(it.dur || 0)) + " · resume with OK</small><div class='resume-bar'><div style='width:35%'></div></div>";
+        b.addEventListener("click", function () { show("choose"); var p = $("playBtn"); if (p) p.click(); });
+        box.appendChild(b);
+      });
+      refreshFocusables();
+    }
+    paintRecents();
+    try {
+      if (FTV) FTV.bindMediaKeys({
+        play: function () { var p = $("ppBtn"); if (p && !$("screen-play").hidden) p.click(); },
+        pause: function () { var p2 = $("ppBtn"); if (p2 && !$("screen-play").hidden) p2.click(); },
+        previoustrack: function () { var b = $("prevBtn"); if (b) b.click(); },
+        nexttrack: function () { var n = $("nextBtn"); if (n) n.click(); }
+      });
+    } catch (e) {}
+    var _play = $("playBtn");
+    if (_play) _play.addEventListener("click", function () {
+      setTimeout(function () {
+        try { if (FTV && state.route) FTV.pushRecent({ label: routeLabel(), dur: state.route.totalDuration }); } catch (e) {}
+        paintRecents();
+        try { if (FTV) FTV.setMediaSession(routeLabel() + " · CUTLINE", "Harbor Lights"); } catch (e) {}
+      }, 50);
+    }, true);
+    function openVoice() { var o = $("voiceOverlay"); if (!o) return; o.hidden = false; setFocus($("voiceText")); }
+    function closeVoice() { var o2 = $("voiceOverlay"); if (o2) o2.hidden = true; }
+    function runVoice(cmd) {
+      var v = FTV ? FTV.parseAlexaVoice(cmd) : null;
+      if (!v) { applyNL(cmd); closeVoice(); show("choose"); return; }
+      if (v.action === "pause" || v.action === "play") { closeVoice(); show("play"); var p = $("ppBtn"); if (p) p.click(); return; }
+      if (v.action === "next") { closeVoice(); var n = $("nextBtn"); if (n) n.click(); return; }
+      if (v.action === "prev") { closeVoice(); var b2 = $("prevBtn"); if (b2) b2.click(); return; }
+      if (v.action === "home") { closeVoice(); show("home"); return; }
+      var parts = [];
+      if (v.budgetMin) parts.push("I have " + v.budgetMin + " minutes");
+      if (v.thread) parts.push(v.thread + " thread only");
+      if (v.mood === "intense") parts.push("intense version");
+      if (v.kidsOnly) parts.push("kids safe");
+      if (parts.length) applyNL(parts.join(", "));
+      else if (cmd) applyNL(cmd);
+      closeVoice(); show("choose");
+    }
+    var nv = $("navVoice"); if (nv) nv.addEventListener("click", openVoice);
+    var vc = $("voiceClose"); if (vc) vc.addEventListener("click", closeVoice);
+    var vg = $("voiceGo"); if (vg) vg.addEventListener("click", function () { runVoice($("voiceText").value); });
+    var vt = $("voiceText");
+    if (vt) vt.addEventListener("keydown", function (e) { e.stopPropagation(); if (e.key === "Enter") runVoice(vt.value); });
+    var pinBuf = "";
+    function paintPin() { var d = $("pinDots"); if (d) d.textContent = (pinBuf + "••••").slice(0, 4); }
+    function openPin() { pinBuf = ""; paintPin(); var m = $("pinModal"); if (m) { m.hidden = false; setFocus($("pinCancel")); } }
+    var pad = $("pinPad");
+    if (pad && !pad.children.length) {
+      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "C", "OK"].forEach(function (k) {
+        var b = document.createElement("button"); b.textContent = k; b.className = "focusable";
+        b.addEventListener("click", function () {
+          if (k === "C") pinBuf = "";
+          else if (k === "OK") {
+            if (FTV && FTV.pinCheck(pinBuf || "1111")) { $("pinModal").hidden = true; state.kidsOnly = true; syncBudgetUI(); rebuild(); show("choose"); }
+            else { pinBuf = ""; paintPin(); return; }
+          } else if (pinBuf.length < 4) pinBuf += k;
+          paintPin(); refreshFocusables();
+        });
+        pad.appendChild(b);
+      });
+    }
+    var pc = $("pinCancel"); if (pc) pc.addEventListener("click", function () { $("pinModal").hidden = true; });
+    document.querySelectorAll('[data-vibe="kids"]').forEach(function (b) {
+      b.addEventListener("click", function (e) { if (FTV && !state.kidsOnly) { e.stopPropagation(); openPin(); } }, true);
+    });
+  }
   initOttFireTv();
+  initFireOSBuiltIn();
   refreshFocusables();
   show(savedHash ? "choose" : "home");
   if (savedHash) rebuild();

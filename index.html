@@ -19,11 +19,12 @@
 <a class="skip-link" href="#routeTitle">Skip to story route</a>
 <noscript><div class="empty" style="margin:16px 48px">CUTLINE needs JavaScript to build time-budgeted cuts.</div></noscript>
 <div class="hype-ticker" aria-hidden="true"><div class="hype-ticker-track"><span>52:14 → 15:00 · ZERO FOMO</span><span>✂ NOT A RECAP — A VERSION YOU CAN FINISH</span><span>🔥 28 SCENES → ONE COHERENT CUT</span><span>⚡ ONE CLICK → PLAYING</span><span>52:14 → 15:00 · ZERO FOMO</span><span>✂ NOT A RECAP — A VERSION YOU CAN FINISH</span><span>🔥 28 SCENES → ONE COHERENT CUT</span><span>⚡ ONE CLICK → PLAYING</span></div></div>
+<div class="sysbar" role="status" aria-label="Fire TV system status"><span class="fire-badge">FIRE TV</span><span id="sysApp">CUTLINE · Built-in</span><span class="sys-right"><span><span class="sys-dot"></span><span id="sysNet">Online</span></span><span id="sysClock">--:--</span><span id="sysDevice">Fire TV</span></span></div>
 <header class="topbar">
   <div class="logo">CUTLINE<span class="logo-live">LIVE DEMO</span></div>
   <div class="tagline">Keep the story. Cut the wandering. <b>Not a recap — a version you can finish.</b></div>
   <div class="episode-badge"><b id="epTitle">HARBOR LIGHTS · S01E07</b><span id="epMeta">Full episode 52:14 · 28 scenes · Fire TV demo</span></div>
-  <nav class="topnav" aria-label="Launcher nav"><button class="pill focusable" id="navHome" aria-pressed="true">Home</button><button class="pill focusable" id="navCuts" aria-pressed="false">Cuts</button><button class="pill focusable" id="navPlay" aria-pressed="false">Now playing</button><button class="pill focusable" id="navOtt" title="All OTT apps">OTT</button><button class="pill focusable" id="navSettings" title="Fire TV settings">⚙</button></nav>
+  <nav class="topnav" aria-label="Launcher nav"><button class="pill focusable" id="navHome" aria-pressed="true">Home</button><button class="pill focusable" id="navCuts" aria-pressed="false">Cuts</button><button class="pill focusable" id="navPlay" aria-pressed="false">Now playing</button><button class="pill focusable" id="navOtt" title="All OTT apps">OTT</button><button class="pill focusable" id="navVoice" title="Hold to talk to Alexa">🎙️ Alexa</button><button class="pill focusable" id="navSettings" title="Fire TV settings">⚙</button></nav>
 </header>
 <section class="hero-one-click" aria-label="One-click cut">
   <div class="hero-copy">
@@ -91,6 +92,8 @@
     </div>
     <div class="rail ott-rail" id="ottRail" role="group" aria-label="Connected OTT apps"></div>
     <div id="ottResults" class="ott-results" aria-live="polite"></div>
+    <h2 class="section-title">Fire TV · Continue watching <small style="color:var(--muted);font-size:15px">— on-device recents row</small></h2>
+    <div class="fire-row" id="fireRecents" aria-live="polite"><div class="empty">Nothing yet — your cuts will live here like a built-in channel.</div></div>
     <h2 class="section-title">My cuts <small id="histClear" style="float:right"><button class="chip focusable" id="clearHist">clear</button></small></h2>
     <div class="rail" id="histRail" aria-live="polite"><div class="empty">No cuts yet — hit Play and we'll save it here.</div></div>
   </section>
@@ -223,6 +226,29 @@
   </section>
 </main>
 
+<div id="voiceOverlay" hidden role="dialog" aria-label="Alexa voice">
+  <div class="voice-card">
+    <div class="voice-ring">🎙️</div>
+    <h2 class="section-title" style="margin:0">Alexa is listening…</h2>
+    <p class="voice-hint">Say “Play my 15-minute cut” · “Mystery only” · “Kids have 8 minutes” · “Pause”</p>
+    <input id="voiceText" class="focusable" type="text" enterkeyhint="go" placeholder='Type a voice command if remote mic is off'>
+    <div class="row" style="justify-content:center;margin-top:14px">
+      <button class="btn gold focusable" id="voiceGo">Do it</button>
+      <button class="btn ghost focusable" id="voiceClose">Close</button>
+    </div>
+  </div>
+</div>
+<div id="pinModal" hidden role="dialog" aria-label="Parental PIN">
+  <div class="voice-card">
+    <h2 class="section-title" style="margin:0">Kids-safe PIN</h2>
+    <p class="voice-hint">Enter Fire TV parental PIN to unlock kids-safe route (default 1111).</p>
+    <div class="pin-dots" id="pinDots">••••</div>
+    <div class="pin-pad" id="pinPad" role="group" aria-label="PIN pad"></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn ghost focusable" id="pinCancel">Cancel</button>
+    </div>
+  </div>
+</div>
 <div id="techModal" hidden role="dialog" aria-label="Algorithm details">
   <div class="tech-box">
     <h2 class="section-title">Budget solver — how the cut is built</h2>

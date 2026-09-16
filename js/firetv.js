@@ -59,5 +59,72 @@
       return (c.effectiveType || c.type || "unknown") + (c.saveData ? " · save-data" : "");
     } catch (e) { return "unknown"; }
   }
-  return { isFireTV: isFireTV, isLowPower: isLowPower, applyPlatformClass: applyPlatformClass, keepAwake: keepAwake, setMediaSession: setMediaSession, parseAlexaIntent: parseAlexaIntent, networkKind: networkKind };
+  function deviceProfile() {
+    var ua = UA || "";
+    var model = "Fire TV";
+    var m = ua.match(/(AFT[A-Z0-9]+)/);
+    if (m) model = "Fire TV (" + m[1] + ")";
+    else if (/Silk/i.test(ua)) model = "Fire TV (Silk)";
+    return { model: model, lowPower: isLowPower(), ua: ua };
+  }
+  function systemTime() {
+    try { return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+    catch (e) { return ""; }
+  }
+  function parseAlexaVoice(text) {
+    var t = (text || "").toLowerCase();
+    var out = { budgetMin: null, thread: null, mood: null, kidsOnly: false, afterSec: null, action: null };
+    if (!t) return out;
+    if (/pause|stop|halt/.test(t)) out.action = "pause";
+    else if (/resume|continue|play/.test(t)) out.action = "play";
+    else if (/next|forward|skip/.test(t)) out.action = "next";
+    else if (/back|previous|rewind|replay/.test(t)) out.action = "prev";
+    else if (/home|launcher/.test(t)) out.action = "home";
+    var m = t.match(/(\d+)\s*(min|minute)/);
+    if (m) out.budgetMin = parseInt(m[1], 10);
+    if (/five|5/.test(t) && /essentials|quick|short/.test(t)) out.budgetMin = 5;
+    if (/fifteen|15/.test(t)) out.budgetMin = 15;
+    if (/thirty|30/.test(t)) out.budgetMin = 30;
+    if (/full|whole|entire/.test(t)) out.budgetMin = 52;
+    if (/mystery|detective|clue/.test(t)) out.thread = "mystery";
+    else if (/romance|heart|love|family/.test(t)) out.thread = "heart";
+    else if (/chase|action|storm/.test(t)) out.thread = "chase";
+    if (/intense|exciting|tense/.test(t)) out.mood = "intense";
+    if (/kids|family-safe|calm|gentle/.test(t)) out.kidsOnly = true;
+    var tm = t.match(/(\d+):(\d+)/);
+    if (tm && /stopped|left|from|catch/.test(t)) out.afterSec = parseInt(tm[1], 10) * 60 + parseInt(tm[2], 10);
+    return out;
+  }
+  function recentsKey() { return "cutline:firetv:recents:v1"; }
+  function getRecents() {
+    try { return JSON.parse(localStorage.getItem(recentsKey()) || "[]"); }
+    catch (e) { return []; }
+  }
+  function pushRecent(item) {
+    try {
+      var r = getRecents();
+      r = r.filter(function (x) { return x && x.label !== item.label; });
+      r.unshift({ label: item.label, dur: item.dur, at: Date.now() });
+      localStorage.setItem(recentsKey(), JSON.stringify(r.slice(0, 6)));
+      return r.slice(0, 6);
+    } catch (e) { return []; }
+  }
+  function pinGet() {
+    try { return localStorage.getItem("cutline:firetv:pin:v1") || "1111"; }
+    catch (e) { return "1111"; }
+  }
+  function pinCheck(pin) { return String(pin) === String(pinGet()); }
+  function pinSet(pin) {
+    try { localStorage.setItem("cutline:firetv:pin:v1", String(pin)); } catch (e) {}
+  }
+  function bindMediaKeys(handlers) {
+    try {
+      if (!("mediaSession" in navigator)) return;
+      handlers = handlers || {};
+      ["play", "pause", "previoustrack", "nexttrack"].forEach(function (a) {
+        try { navigator.mediaSession.setActionHandler(a, handlers[a] || null); } catch (e) {}
+      });
+    } catch (e) {}
+  }
+  return { isFireTV: isFireTV, isLowPower: isLowPower, applyPlatformClass: applyPlatformClass, keepAwake: keepAwake, setMediaSession: setMediaSession, parseAlexaIntent: parseAlexaIntent, networkKind: networkKind, deviceProfile: deviceProfile, systemTime: systemTime, parseAlexaVoice: parseAlexaVoice, getRecents: getRecents, pushRecent: pushRecent, pinGet: pinGet, pinCheck: pinCheck, pinSet: pinSet, bindMediaKeys: bindMediaKeys };
 });
