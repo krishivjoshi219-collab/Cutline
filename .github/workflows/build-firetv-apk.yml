@@ -1,0 +1,114 @@
+name: Build Fire TV APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cutline-rn/**'
+      - '.github/workflows/build-firetv-apk.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'cutline-rn/**'
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  build-apk:
+    name: Build Fire TV APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Java (Android build needs JDK 17) ─────────────────────────────
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # ── 3. Node ───────────────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: cutline-rn/package.json
+
+      # ── 4. Android SDK ────────────────────────────────────────────────────
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses || true
+
+      # ── 5. Install Expo CLI + EAS ─────────────────────────────────────────
+      - name: Install Expo CLI & EAS CLI
+        run: npm install -g expo-cli eas-cli
+
+      # ── 6. Install dependencies ───────────────────────────────────────────
+      - name: Install npm dependencies
+        working-directory: cutline-rn
+        run: npm install
+
+      # ── 7. Prebuild (generates android/ folder) ───────────────────────────
+      - name: Expo prebuild for Android (TV)
+        working-directory: cutline-rn
+        run: |
+          npx expo prebuild --platform android --no-install
+        env:
+          EXPO_NO_TELEMETRY: 1
+
+      # ── 8. Make gradlew executable ────────────────────────────────────────
+      - name: Make gradlew executable
+        working-directory: cutline-rn/android
+        run: chmod +x gradlew
+
+      # ── 9. Cache Gradle ───────────────────────────────────────────────────
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('cutline-rn/android/**/*.gradle*', 'cutline-rn/android/**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      # ── 10. Build debug APK ───────────────────────────────────────────────
+      - name: Build Debug APK
+        working-directory: cutline-rn/android
+        run: ./gradlew assembleDebug --no-daemon
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+
+      # ── 11. Rename APK ────────────────────────────────────────────────────
+      - name: Rename APK
+        run: |
+          mkdir -p artifacts
+          cp cutline-rn/android/app/build/outputs/apk/debug/app-debug.apk \
+             artifacts/cutline-firetv-debug-${{ github.sha }}.apk
+
+      # ── 12. Upload APK as artifact ────────────────────────────────────────
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cutline-firetv-apk
+          path: artifacts/cutline-firetv-debug-${{ github.sha }}.apk
+          retention-days: 30
+
+      # ── 13. Summary ───────────────────────────────────────────────────────
+      - name: Build Summary
+        run: |
+          echo "## ✅ Fire TV APK Built!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**File:** \`cutline-firetv-debug-${{ github.sha }}.apk\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download from the **Actions** tab → this run → **Artifacts** section." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Install on Fire TV" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "adb connect <firetv-ip>:5555" >> $GITHUB_STEP_SUMMARY
+          echo "adb install cutline-firetv-debug-*.apk" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
