@@ -19,9 +19,9 @@ import { EPISODE, SCENES, DEMO_VIDEO, OTT_PROVIDERS } from "./src/data";
 
 type Screen = "home" | "choose" | "play";
 
-const BUDGETS = [300, 900, 1800, 3134] as const;
-const STORAGE_KEY = "cutline:rn:v1";
 const FULL_BUDGET = 3134;
+const BUDGETS = [300, 900, 1800, FULL_BUDGET] as const;
+const STORAGE_KEY = "cutline:rn:v1";
 
 // FireOS runs as Android TV. Keep D-pad / remote logic behind this flag
 // so the same TS bundle still runs on phone for debugging.
@@ -143,7 +143,7 @@ export default function App(): JSX.Element {
           <Text style={s.sub}>Pick a time, press OK. Story holds. {fmt(EPISODE.durationSec - route.totalDuration)} saved.</Text>
           <View style={s.row}>
             {BUDGETS.map((b) => (
-              <TVButton key={b} title={b >= 3134 ? "FULL" : fmt(b)} active={budget === b} onPress={() => { setBudget(b); setScreen("choose"); }} preferred={b === 900} />
+              <TVButton key={b} title={b >= FULL_BUDGET ? "FULL" : fmt(b)} active={budget === b} onPress={() => { setBudget(b); setScreen("choose"); }} preferred={b === 900} />
             ))}
           </View>
           <View style={s.row}>
@@ -160,7 +160,7 @@ export default function App(): JSX.Element {
             <Text style={s.h2}>TIME</Text>
             <View style={s.row}>
               {BUDGETS.map((b) => (
-                <TVButton key={b} title={b >= 3134 ? "FULL" : fmt(b)} active={budget === b} onPress={() => setBudget(b)} />
+                <TVButton key={b} title={b >= FULL_BUDGET ? "FULL" : fmt(b)} active={budget === b} onPress={() => setBudget(b)} />
               ))}
             </View>
             <Text style={s.h2}>THREAD</Text>

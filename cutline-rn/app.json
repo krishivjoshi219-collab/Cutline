@@ -10,8 +10,13 @@
       "package": "tv.cutline.app",
       "versionCode": 1,
       "isTV": true,
-      "leanbackLauncher": true,
-      "permissions": []
+      "permissions": [],
+      "intentFilters": [
+        {
+          "action": "MAIN",
+          "category": ["LEANBACK_LAUNCHER", "LAUNCHER"]
+        }
+      ]
     },
     "plugins": []
   }
