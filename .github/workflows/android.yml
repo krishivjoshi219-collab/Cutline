@@ -24,7 +24,8 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: android-actions/setup-android@v3
-      - run: npm ci
+      - run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+      - run: npm install --no-audit --no-fund
       - run: npm run tsc --if-present
       - run: npx expo prebuild --platform android --clean --non-interactive
       - run: ./gradlew -p android assembleDebug --stacktrace
