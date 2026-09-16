@@ -121,11 +121,28 @@ jobs:
           path: cutline-rn/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      # ── 13. Summary ───────────────────────────────────────────────────────
+      # ── 13. Build Vega OS Package (.vpkg) ─────────────────────────────────
+      - name: Build Vega OS Package (.vpkg)
+        run: |
+          chmod +x cutline-rn/scripts/build-vpkg.sh
+          ./cutline-rn/scripts/build-vpkg.sh
+
+      # ── 14. Upload Vega OS .vpkg artifact ─────────────────────────────────
+      - name: Upload Vega OS .vpkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cutline-vegaos-vpkg
+          path: cutline-firetv-v0.1.0.vpkg
+          retention-days: 30
+
+      # ── 15. Summary ───────────────────────────────────────────────────────
       - name: Build Summary
         run: |
-          echo "## ✅ Fire TV APK Built!" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Fire TV APK & Vega OS Package Built!" >> $GITHUB_STEP_SUMMARY
           echo "Download from **Actions → this run → Artifacts**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android / Fire OS**: \`cutline-firetv-apk\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Amazon Vega OS**: \`cutline-vegaos-vpkg\` (\`.vpkg\`)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Sideload on Fire TV" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY

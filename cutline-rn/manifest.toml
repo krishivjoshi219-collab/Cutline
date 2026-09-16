@@ -1,0 +1,30 @@
+schema-version = 1
+
+[package]
+id = "tv.cutline.app"
+title = "Cutline"
+version = "0.1.0"
+description = "CUTLINE — time-budgeted viewing routes for Fire TV and Vega OS. Built for Amazon App Dev Hackathon 2026."
+publisher = "krishivjoshi219-collab"
+
+[components]
+[[components.interactive]]
+id = "tv.cutline.app.main"
+runtime-module = "/com.amazon.kepler.keplerscript.runtime.loader_2@IKeplerScript_2_0"
+launch-type = "singleton"
+categories = ["com.amazon.category.main", "com.amazon.category.video"]
+entry-point = "index.bundle.js"
+
+[needs]
+[[needs.module]]
+id = "/com.amazon.kepler.media@IMedia_1_0"
+
+[[needs.module]]
+id = "/com.amazon.kepler.network@INetwork_1_0"
+
+[[needs.module]]
+id = "/com.amazon.kepler.input.dpad@IDpad_1_0"
+
+[wants]
+[[wants.module]]
+id = "/com.amazon.kepler.alexa@IAlexa_1_0"
