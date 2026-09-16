@@ -12,6 +12,11 @@ on:
       - 'cutline-rn/**'
   workflow_dispatch:
 
+env:
+  # Force single SDK path — prevents the ANDROID_HOME vs ANDROID_SDK_ROOT conflict
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
 jobs:
   build-apk:
     name: Build Fire TV APK
@@ -37,17 +42,15 @@ jobs:
           cache: 'npm'
           cache-dependency-path: cutline-rn/package.json
 
-      # ── 4. Accept Android SDK licenses (non-interactive) ─────────────────
+      # ── 4. Accept Android SDK licenses (write hash files) ─────────────────
       - name: Accept Android SDK licenses
         run: |
-          # ubuntu-latest has Android SDK pre-installed at $ANDROID_HOME
-          mkdir -p "$ANDROID_HOME/licenses"
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$ANDROID_HOME/licenses/android-sdk-license"
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" >> "$ANDROID_HOME/licenses/android-sdk-license"
-          echo "504667f4c0de7af1a06de9f4b1727b84351f2910" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
-          echo "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" > "$ANDROID_HOME/licenses/google-gdk-license"
-          echo "e9acab5b5fbb560a72cfaecce8946896ff6aab9d" > "$ANDROID_HOME/licenses/android-googletv-license"
+          mkdir -p /usr/local/lib/android/sdk/licenses
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >  /usr/local/lib/android/sdk/licenses/android-sdk-license
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> /usr/local/lib/android/sdk/licenses/android-sdk-license
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" >> /usr/local/lib/android/sdk/licenses/android-sdk-license
+          echo "504667f4c0de7af1a06de9f4b1727b84351f2910" >  /usr/local/lib/android/sdk/licenses/android-sdk-preview-license
+          echo "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" >  /usr/local/lib/android/sdk/licenses/google-gdk-license
 
       # ── 5. Install Expo CLI ───────────────────────────────────────────────
       - name: Install Expo CLI
@@ -65,12 +68,18 @@ jobs:
         env:
           EXPO_NO_TELEMETRY: 1
 
-      # ── 8. Make gradlew executable ────────────────────────────────────────
-      - name: Make gradlew executable
-        working-directory: cutline-rn/android
-        run: chmod +x gradlew
+      # ── 8. Fix local.properties with correct SDK path ─────────────────────
+      # Expo prebuild may write a wrong sdk.dir — override it
+      - name: Fix local.properties
+        run: |
+          echo "sdk.dir=/usr/local/lib/android/sdk" > cutline-rn/android/local.properties
+          cat cutline-rn/android/local.properties
 
-      # ── 9. Cache Gradle ───────────────────────────────────────────────────
+      # ── 9. Make gradlew executable ────────────────────────────────────────
+      - name: Make gradlew executable
+        run: chmod +x cutline-rn/android/gradlew
+
+      # ── 10. Cache Gradle ──────────────────────────────────────────────────
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -80,14 +89,15 @@ jobs:
           key: gradle-${{ hashFiles('cutline-rn/android/**/*.gradle*', 'cutline-rn/android/**/gradle-wrapper.properties') }}
           restore-keys: gradle-
 
-      # ── 10. Build debug APK ───────────────────────────────────────────────
+      # ── 11. Build debug APK ───────────────────────────────────────────────
       - name: Build Debug APK
         working-directory: cutline-rn/android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleDebug --no-daemon
         env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
-      # ── 11. Upload APK ────────────────────────────────────────────────────
+      # ── 12. Upload APK ────────────────────────────────────────────────────
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -95,7 +105,7 @@ jobs:
           path: cutline-rn/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      # ── 12. Summary ───────────────────────────────────────────────────────
+      # ── 13. Summary ───────────────────────────────────────────────────────
       - name: Build Summary
         run: |
           echo "## ✅ Fire TV APK Built!" >> $GITHUB_STEP_SUMMARY
