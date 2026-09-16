@@ -1,61 +1,128 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Linking, Platform, useTVEventHandler } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  Linking,
+  Platform,
+  useTVEventHandler,
+  BackHandler,
+} from "react-native";
+import type { TVEvent } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Video, ResizeMode } from "expo-av";
-import { useKeepAwake } from "expo-keep-awake";
-import { buildRoute, fmt, fmtRange, Thread } from "./src/solver";
+import Video, { type VideoRef } from "react-native-video";
+import { useKeepAwake } from "react-native-keep-awake";
+import { buildRoute, fmt, fmtRange, type Thread } from "./src/solver";
 import { EPISODE, SCENES, DEMO_VIDEO, OTT_PROVIDERS } from "./src/data";
 
 type Screen = "home" | "choose" | "play";
-const BUDGETS = [300, 900, 1800, 3134];
 
-export default function App() {
+const BUDGETS = [300, 900, 1800, 3134] as const;
+const STORAGE_KEY = "cutline:rn:v1";
+const FULL_BUDGET = 3134;
+
+// FireOS runs as Android TV. Keep D-pad / remote logic behind this flag
+// so the same TS bundle still runs on phone for debugging.
+const isTV = Platform.isTV === true;
+const isFireOS = Platform.OS === "android" && isTV;
+
+type PersistedState = {
+  budget?: number;
+  thread?: Thread;
+  intense?: boolean;
+  kidsOnly?: boolean;
+};
+
+export default function App(): JSX.Element {
   useKeepAwake();
   const [screen, setScreen] = useState<Screen>("home");
-  const [budget, setBudget] = useState(900);
+  const [budget, setBudget] = useState<number>(900);
   const [thread, setThread] = useState<Thread>("all");
-  const [intense, setIntense] = useState(false);
-  const [kidsOnly, setKidsOnly] = useState(false);
-  const [sceneIdx, setSceneIdx] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const videoRef = useRef<Video>(null);
+  const [intense, setIntense] = useState<boolean>(false);
+  const [kidsOnly, setKidsOnly] = useState<boolean>(false);
+  const [sceneIdx, setSceneIdx] = useState<number>(0);
+  const [playing, setPlaying] = useState<boolean>(false);
+  const videoRef = useRef<VideoRef>(null);
 
   const route = useMemo(
     () => buildRoute(SCENES, budget, { thread, mood: intense ? "intense" : null, kidsOnly }),
     [budget, thread, intense, kidsOnly]
   );
 
+  const routeKey = useMemo(() => route.ids.join(","), [route.ids]);
+  useEffect(() => { setSceneIdx(0); }, [routeKey]);
+
+  const goNext = useCallback(() => {
+    setSceneIdx((i) => Math.min(Math.max(route.scenes.length - 1, 0), i + 1));
+  }, [route.scenes.length]);
+
+  const goPrev = useCallback(() => {
+    setSceneIdx((i) => Math.max(0, i - 1));
+  }, []);
+
+  const togglePlay = useCallback(() => setPlaying((p) => !p), []);
+
   useEffect(() => {
-    AsyncStorage.setItem("cutline:rn:v1", JSON.stringify({ budget, thread, intense, kidsOnly })).catch(() => {});
+    const payload: PersistedState = { budget, thread, intense, kidsOnly };
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(() => undefined);
   }, [budget, thread, intense, kidsOnly]);
 
   useEffect(() => {
-    AsyncStorage.getItem("cutline:rn:v1").then((v) => {
-      if (!v) return;
-      try {
-        const p = JSON.parse(v);
-        if (p.budget) setBudget(p.budget);
-        if (p.thread) setThread(p.thread);
-        setIntense(!!p.intense); setKidsOnly(!!p.kidsOnly);
-      } catch {}
-    }).catch(() => {});
+    let mounted = true;
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((v) => {
+        if (!v || !mounted) return;
+        try {
+          const p = JSON.parse(v) as PersistedState;
+          if (typeof p.budget === "number") setBudget(p.budget);
+          if (p.thread === "all" || p.thread === "mystery" || p.thread === "heart" || p.thread === "chase") setThread(p.thread);
+          setIntense(Boolean(p.intense));
+          setKidsOnly(Boolean(p.kidsOnly));
+        } catch {
+          // keep defaults on corrupt storage
+        }
+      })
+      .catch(() => undefined);
+    return () => { mounted = false; };
   }, []);
 
-  useTVEventHandler((evt) => {
-    if (evt.eventType === "playPause" && screen === "play") setPlaying((p) => !p);
-    if (evt.eventType === "next") setSceneIdx((i) => Math.min(route.scenes.length - 1, i + 1));
-    if (evt.eventType === "previous") setSceneIdx((i) => Math.max(0, i - 1));
-  });
+  const onTVEvent = useCallback(
+    (evt: TVEvent) => {
+      if (evt.eventType === "playPause" && screen === "play") togglePlay();
+      else if (evt.eventType === "next" || evt.eventType === "fastForward") goNext();
+      else if (evt.eventType === "previous" || evt.eventType === "rewind") goPrev();
+      else if (evt.eventType === "menu" && screen === "play") setScreen("choose");
+    },
+    [screen, togglePlay, goNext, goPrev]
+  );
+  useTVEventHandler(onTVEvent);
 
-  useEffect(() => { setSceneIdx(0); }, [route.ids.join(",")]);
+  // FireOS remote Back button should navigate back instead of exiting.
+  useEffect(() => {
+    if (!isFireOS) return undefined;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (screen === "play") { setScreen("choose"); return true; }
+      if (screen === "choose") { setScreen("home"); return true; }
+      return false;
+    });
+    return () => sub.remove();
+  }, [screen]);
 
-  const openOTT = (id: string) => {
+  const openOTT = useCallback(async (id: string): Promise<void> => {
     const p = OTT_PROVIDERS.find((x) => x.id === id);
     if (!p) return;
-    Linking.canOpenURL(p.app).then((ok) => Linking.openURL(ok ? p.app : p.web)).catch(() => Linking.openURL(p.web));
-  };
+    try {
+      const ok = await Linking.canOpenURL(p.app);
+      await Linking.openURL(ok ? p.app : p.web);
+    } catch {
+      try { await Linking.openURL(p.web); } catch { /* no-op */ }
+    }
+  }, []);
 
-  const cur = route.scenes[sceneIdx];
+  const cur = route.scenes[sceneIdx] ?? null;
+  const onVideoEnd = useCallback(() => { goNext(); }, [goNext]);
 
   return (
     <View style={s.root}>
@@ -131,10 +198,12 @@ export default function App() {
               ref={videoRef}
               source={{ uri: DEMO_VIDEO }}
               style={s.video}
-              resizeMode={ResizeMode.CONTAIN}
-              shouldPlay={playing}
-              useNativeControls={Platform.isTV ? false : true}
-              onPlaybackStatusUpdate={(st) => { if (st.isLoaded && st.didJustFinish) setSceneIdx((i) => Math.min(route.scenes.length - 1, i + 1)); }}
+              resizeMode="contain"
+              paused={!playing}
+              controls={!isTV}
+              preventsDisplaySleepDuringVideoPlayback
+              onEnd={onVideoEnd}
+              onError={(e) => console.warn("[cutline] video error", e.error)}
             />
             <Text style={s.h2}>{cur ? `${fmtRange(cur)} · ${cur.title}` : "—"}</Text>
             <Text style={s.sub}>{cur?.synopsis ?? ""}</Text>
@@ -166,10 +235,29 @@ export default function App() {
   );
 }
 
-function TVButton({ title, onPress, active, preferred }: { title: string; onPress: () => void; active?: boolean; preferred?: boolean }) {
+type TVButtonProps = {
+  title: string;
+  onPress: () => void;
+  active?: boolean;
+  preferred?: boolean;
+};
+
+function TVButton({ title, onPress, active, preferred }: TVButtonProps): JSX.Element {
+  const [focused, setFocused] = useState<boolean>(false);
   return (
-    <TouchableOpacity hasTVPreferredFocus={!!preferred} onPress={onPress} style={[s.btn, active && s.btnActive]}>
-      <Text style={[s.btnT, active && s.btnTActive]}>{title}</Text>
+    <TouchableOpacity
+      hasTVPreferredFocus={preferred === true}
+      tvParallaxProperties={{ magnification: 1.08 }}
+      accessible
+      accessibilityRole="button"
+      accessibilityState={{ selected: active === true }}
+      activeOpacity={0.7}
+      onPress={onPress}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={[s.btn, active === true && s.btnActive, focused && s.btnFocused]}
+    >
+      <Text style={[s.btnT, active === true && s.btnTActive]}>{title}</Text>
     </TouchableOpacity>
   );
 }
