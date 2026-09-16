@@ -75,7 +75,25 @@ jobs:
           echo "sdk.dir=/usr/local/lib/android/sdk" > cutline-rn/android/local.properties
           cat cutline-rn/android/local.properties
 
-      # ── 9. Make gradlew executable ────────────────────────────────────────
+      # ── 9. Ensure splashscreen color resource exists ──────────────────────
+      - name: Ensure splashscreen color resource exists
+        run: |
+          mkdir -p cutline-rn/android/app/src/main/res/values
+          COLORS_FILE="cutline-rn/android/app/src/main/res/values/colors.xml"
+          if [ -f "$COLORS_FILE" ]; then
+            if ! grep -q "splashscreen_background" "$COLORS_FILE"; then
+              sed -i 's|</resources>|    <color name="splashscreen_background">#0A0D14</color>\n</resources>|' "$COLORS_FILE"
+            fi
+          else
+            cat << 'EOF' > "$COLORS_FILE"
+<resources>
+    <color name="splashscreen_background">#0A0D14</color>
+</resources>
+EOF
+          fi
+          cat "$COLORS_FILE"
+
+      # ── 10. Make gradlew executable ───────────────────────────────────────
       - name: Make gradlew executable
         run: chmod +x cutline-rn/android/gradlew
 

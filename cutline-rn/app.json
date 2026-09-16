@@ -5,6 +5,10 @@
     "version": "0.1.0",
     "orientation": "landscape",
     "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0A0D14",
+      "resizeMode": "contain"
+    },
     "assetBundlePatterns": ["**/*"],
     "android": {
       "package": "tv.cutline.app",
