@@ -6,6 +6,9 @@
   });
   var S = window.CutlineSolver;
   var EP = window.EPISODE;
+  var IS_FIRETV = /AFT|AFTM|AFTT|Fire TV|Fire OS|KFSUWI|Silk-Accelerated/i.test(navigator.userAgent || "") || (window.matchMedia && matchMedia("(min-width:1280px) and (min-height:720px)").matches && /Linux armv|Android/i.test(navigator.userAgent || ""));
+  try { if (IS_FIRETV) document.body.classList.add("firetv"); } catch (e) {}
+  function getQuery() { var q = {}; try { (location.search || "").replace(/^\?/, "").split("&").forEach(function (p) { var kv = p.split("="); if (kv[0]) q[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || ""); }); } catch (e) {} return q; }
 
   var state = {
     budget: 900,            // seconds, or "full"
@@ -306,7 +309,11 @@
     })();
   }
 
+  var focusMemory = { home: null, choose: null, play: null };
+  var lastScreen = "home";
   function show(screen) {
+    try { if (current) focusMemory[lastScreen] = current; } catch (e) {}
+    lastScreen = screen;
     $("screen-home").hidden = screen !== "home";
     $("screen-choose").hidden = screen !== "choose";
     $("screen-play").hidden = screen !== "play";
@@ -317,7 +324,7 @@
     refreshFocusables();
     var root = screen === "play" ? $("screen-play") : screen === "choose" ? $("screen-choose") : $("screen-home");
     updateSavedBadges();
-    var first = root.querySelector(".focusable");
+    var first = (focusMemory[screen] && document.contains(focusMemory[screen])) ? focusMemory[screen] : root.querySelector(".focusable");
     if (first) setFocus(first);
     if (screen === "home") renderLauncher();
   }
@@ -511,12 +518,20 @@
     else if (k === "ArrowLeft" && !(current && current.type === "range")) { e.preventDefault(); move("left"); }
     else if (k === "ArrowRight" && !(current && current.type === "range")) { e.preventDefault(); move("right"); }
     else if (k === "Enter" && current && current.tagName !== "INPUT" && current.tagName !== "VIDEO") { e.preventDefault(); current.click(); }
-    else if ((k === " " || k === "MediaPlayPause") && !$("screen-play").hidden) { e.preventDefault(); $("ppBtn").click(); }
+    else if ((k === " " || k === "MediaPlayPause" || k === "Play" || k === "Pause" || e.keyCode === 179 || e.keyCode === 19) && !$("screen-play").hidden) { e.preventDefault(); $("ppBtn").click(); }
+    else if ((k === "MediaFastForward" || k === "MediaNextTrack" || e.keyCode === 228 || e.keyCode === 417) && !$("screen-play").hidden) { e.preventDefault(); if (player) player.next(); }
+    else if ((k === "MediaRewind" || k === "MediaPreviousTrack" || e.keyCode === 227 || e.keyCode === 412) && !$("screen-play").hidden) { e.preventDefault(); if (player) player.prev(); }
   });
   document.addEventListener("mouseover", function (e) {
+    if (IS_FIRETV) return; // Fire TV has no hover: ignore mouse to keep D-pad focus stable
     var f = e.target.closest && e.target.closest(".focusable");
     if (f) setFocus(f);
   });
+  // FireOS suspends the web app on Home / screensaver: pause + persist progress.
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden && player && player.playing) { try { player.pause(); } catch (e) {} var b = $("ppBtn"); if (b) b.textContent = "▶ Play"; }
+  });
+  window.addEventListener("blur", function () { if (player && player.playing && IS_FIRETV) { try { player.pause(); } catch (e) {} } });
 
   /* ---------- boot ---------- */
   if (!S || !EP || typeof SCENES === "undefined") {
@@ -537,6 +552,16 @@
     if (state.intense) { $("moodBtn").textContent = "INTENSE: on"; $("moodBtn").setAttribute("aria-pressed", "true"); }
     if (state.kidsOnly) { $("kidsBtn").textContent = "KIDS-SAFE: on"; $("kidsBtn").setAttribute("aria-pressed", "true"); }
   } catch (e) {}
+  // Alexa / deep-link entry: e.g. ?autoplay=900&thread=mystery&mood=intense or voice companion.
+  try {
+    var _q = getQuery();
+    if (_q.thread && (_q.thread === "mystery" || _q.thread === "heart" || _q.thread === "chase")) state.thread = _q.thread;
+    if (_q.mood === "intense") state.intense = true;
+    if (_q.kids === "1") state.kidsOnly = true;
+    if (_q.budget) { var _b = parseInt(_q.budget, 10); if (isFinite(_b) && _b >= 60) state.budget = _b; if (_q.budget === "full") state.budget = "full"; }
+    if (_q.autoplay) { var _a = parseInt(_q.autoplay, 10); if (isFinite(_a)) state.budget = _a; }
+    if (state.thread) document.querySelectorAll("#threadRow .pill").forEach(function (el) { el.setAttribute("aria-pressed", el.dataset.thread === state.thread ? "true" : "false"); });
+  } catch (e) {}
   syncBudgetUI();
   rebuild();
   function oneClick(sec) {
@@ -553,12 +578,15 @@
   });
   var stickyGo = $("stickyGo"); if (stickyGo) stickyGo.addEventListener("click", function () { $("playBtn").click(); });
   var share = $("shareBtn"); if (share) share.addEventListener("click", function () {
-    var txt = "CUTLINE " + routeLabel() + " — " + state.route.ids.join(",") + " (" + S.fmt(state.route.totalDuration) + ")";
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt);
-    } catch (e) {}
-    share.textContent = "✓ Copied!";
-    setTimeout(function () { share.textContent = "⧉ Share"; }, 1400);
+    var code = "CUTLINE " + routeLabel() + " — " + state.route.ids.join(",") + " (" + S.fmt(state.route.totalDuration) + ")";
+    try { history.replaceState(null, "", encodeCut()); } catch (e) {}
+    var link = "";
+    try { link = location.href; } catch (e) {}
+    try { if (navigator.clipboard && navigator.clipboard.writeText && !IS_FIRETV) navigator.clipboard.writeText(link || code); } catch (e) {}
+    // TV-friendly: show a big code the phone can type, clipboard is useless on Fire TV.
+    $("techPre").textContent = "Share this cut:\n\n" + code + "\n\nLink:\n" + link + "\n\nOn your phone, open the link to get the same route.";
+    $("techModal").hidden = false;
+    setFocus($("techClose"));
   });
   // Launcher wiring
   var savedHash = decodeCut();

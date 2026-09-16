@@ -24,9 +24,9 @@
 </header>
 <section class="hero-one-click" aria-label="One-click cut">
   <div class="hero-copy">
-    <p class="hero-eyebrow">🔥 HACKATHON BUILD · FIRE TV TRACK · WORKS OFFLINE</p>
+    <p class="hero-eyebrow">🔥 FIRE TV · FIREOS · WORKS OFFLINE</p>
     <h1 class="hero-h1">Too busy for 52 minutes?<br><span>Get the whole story in 15.</span></h1>
-    <p class="hero-sub">One click. CUTLINE keeps the reveal, the confrontation, the payoff — and cuts the wandering. No settings. No spoilers. Just press play.</p>
+    <p class="hero-sub">Press OK and CUTLINE keeps the reveal, the confrontation, the payoff — and cuts the wandering. No typing. No spoilers. Just press Play.</p>
     <div class="one-click-row">
       <button id="oneClickPlay" class="btn gold mega pulse focusable">▶ Give me my 15-min cut</button>
       <div class="one-click-presets" role="group" aria-label="One-click presets">
@@ -43,6 +43,7 @@
     <div class="proof-meta">8 scenes kept · 3 jumps · 100% story holds</div>
   </div>
 </section>
+<div class="alexa-bar" role="note">🎙️ Fire TV: hold the <b>Alexa</b> button and say “Play my 15-minute cut” or “Show mystery only” · D-pad <kbd>◀ ▲ ▼ ▶</kbd> + <kbd>OK</kbd> to move</div>
 
 <main>
   <!-- ============ SCREEN: HOME (LAUNCHER) ============ -->
@@ -65,7 +66,7 @@
         </div>
       </div>
     </div>
-    <h2 class="section-title">One-tap cuts</h2>
+    <h2 class="section-title">One-press cuts <small style="color:var(--muted);font-size:15px">— press OK</small></h2>
     <div class="rail" id="cutsRail" role="group" aria-label="One-tap cuts">
       <button class="tap-card focusable" data-launch="300"><b>5:00</b><span>Essentials</span><small>reveal only</small></button>
       <button class="tap-card focusable" data-launch="900"><b>15:00</b><span>Story ★</span><small>8 scenes · signature</small></button>
@@ -130,8 +131,8 @@
         </div>
 
         <div class="card" style="margin-top:16px">
-          <label class="field" for="nlInput">Ask in words — e.g. “mystery thread only”, “I stopped at 23:10, catch me up in 8”</label>
-          <input id="nlInput" class="focusable" type="text" placeholder='Try: "I only have 10 minutes, intense version"'>
+          <label class="field" for="nlInput">Voice or preset — on Fire TV use Alexa or the presets below (on-screen keyboard is slow)</label>
+          <input id="nlInput" class="focusable" type="text" enterkeyhint="go" inputmode="search" placeholder='Try Alexa: "intense version" or pick a preset'>
           <div class="row" style="margin-top:12px">
             <button class="btn focusable" id="nlGo">Build my cut</button>
             <button class="btn ghost focusable" id="reentryBtn">Catch-up from 23:10 · 8 min</button>
@@ -163,7 +164,7 @@
           <ul class="route-list" id="routeList" aria-live="polite" aria-busy="false"></ul>
           <div class="row">
             <button class="btn gold focusable" id="playBtn">▶ Play this cut</button>
-            <button class="btn ghost focusable" id="shareBtn" title="Copy link to this cut">⧉ Share</button>
+            <button class="btn ghost focusable" id="shareBtn" title="Show share code for phone">⧉ Share code</button>
             <button class="btn ghost focusable" id="techBtn">Algorithm + JSON</button>
             <span class="saved-badge" id="savedBadge" aria-live="polite"></span>
           </div>
@@ -214,7 +215,7 @@
 </div>
 
 <footer>
-  Remote: <kbd>◀ ▲ ▼ ▶</kbd> move · <kbd>OK / Enter</kbd> select · <kbd>Backspace / Esc</kbd> back · <kbd>Space</kbd> play/pause &nbsp;·&nbsp;
+  Fire TV: <kbd>◀ ▲ ▼ ▶</kbd> move · <kbd>OK</kbd> select · <kbd>Back</kbd> back · <kbd>▶/⏸</kbd> play/pause · <kbd>⏪ ⏩</kbd> prev/next scene · hold <kbd>Alexa</kbd> for voice &nbsp;·&nbsp;
   CUTLINE · Fire TV track · Amazon App Dev Hackathon 2026 · “Not a recap. A version you can finish.” &nbsp;·&nbsp; Made for busy humans.
 </footer>
 <div id="stickyPlay" hidden><span id="stickyText">15:00 cut ready · 37 min saved</span><button class="btn gold focusable" id="stickyGo">▶ Play now</button></div>

@@ -225,3 +225,16 @@ kbd { background: #1a2450; border: 1px solid #33448a; border-radius: 6px; paddin
 .spoiler-on .ttl, .spoiler-on #bannerTitle { filter: blur(7px); user-select: none; pointer-events: none; }
 .spoiler-tag { font-size: 13px; border: 1px solid var(--gold); color: var(--gold); border-radius: 999px; padding: 1px 10px; margin-left: 8px; vertical-align: middle; }
 @media (max-width: 900px) { .launch-hero { grid-template-columns: 1fr; } .launch-art { min-height: 180px; } }
+/* ===== FIRE TV / FIREOS 10-FOOT ===== */
+.alexa-bar { margin: 12px 48px 0; padding: 12px 20px; border: 2px solid #22336b; border-radius: 12px; background: #0a1330; font-size: 19px; color: var(--muted); }
+.alexa-bar b { color: var(--gold); }
+/* overscan safe-area: FireOS TVs crop ~3% */
+body.firetv main, body.firetv header.topbar, body.firetv footer, body.firetv .alexa-bar { padding-left: max(48px, 3.5vw); padding-right: max(48px, 3.5vw); }
+/* D-pad targets: min 56px, huge focus ring visible from 10ft */
+body.firetv .focusable { min-height: 56px; }
+body.firetv .focusable.focused, body.firetv .focusable:focus-visible { outline: 4px solid #fff; outline-offset: 3px; border-color: var(--gold) !important; box-shadow: 0 0 0 8px rgba(251,191,36,.45) !important; transform: scale(1.02); }
+body.firetv .tap-card.focused, body.firetv .watch-card.focused { transform: scale(1.03); }
+/* low-power sticks: kill heavy blur/spin/ticker */
+body.firetv .launch-glow, body.firetv .pulse { animation: none !important; }
+body.firetv .hype-ticker-track { animation-duration: 40s; }
+@media (max-width: 1100px) { .alexa-bar { margin: 12px 20px 0; } }
