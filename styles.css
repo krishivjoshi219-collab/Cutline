@@ -280,3 +280,8 @@ body.firetv .ott-card.focused { transform: scale(1.03); }
 .fire-card .resume-bar { height: 8px; background: #101c44; border-radius: 999px; overflow: hidden; margin-top: 10px; }
 .fire-card .resume-bar > div { height: 100%; background: linear-gradient(90deg,var(--accent),var(--gold)); }
 body.firetv .sysbar { margin: 0 max(48px,3.5vw); font-size: 19px; }
+/* ===== KILLER: smart-play row ===== */
+.fire-killer { margin: 14px 0; }
+.fire-killer .pill[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+#gapCard { border-color: var(--gold); color: var(--ink); }
+#gapCard b { color: var(--gold); }

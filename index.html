@@ -202,6 +202,23 @@
           <button class="btn ghost focusable" id="prevBtn">⏮ Prev scene</button>
           <button class="btn focusable" id="ppBtn">⏸ Pause</button>
           <button class="btn ghost focusable" id="nextBtn">Next scene ⏭</button>
+          <button class="btn ghost focusable" id="missBtn" title="Explain what was skipped">❓ What did I miss?</button>
+        </div>
+        <div class="card fire-killer" aria-label="Fire TV smart play">
+          <div class="row">
+            <span style="font-weight:800">😴 Sleep</span>
+            <button class="pill focusable" data-sleep="0" aria-pressed="true">Off</button>
+            <button class="pill focusable" data-sleep="15">15</button>
+            <button class="pill focusable" data-sleep="30">30</button>
+            <button class="pill focusable" data-sleep="45">45</button>
+            <span id="sleepText" style="color:var(--muted);font-size:18px">ends on scene boundary</span>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="pill focusable" id="autoplayToggle" aria-pressed="false">Auto-next: off</button>
+            <button class="pill focusable" id="recapToggle" aria-pressed="true">Recap pre-roll: on</button>
+            <button class="pill focusable" id="bingeBtn">Next episode cut ⏭</button>
+          </div>
+          <div class="empty" id="gapCard" hidden style="margin-top:12px"></div>
         </div>
         <div class="ott-open-row card">
           <label class="field" for="ottProviderPick" style="margin:0">Finish full episode in its home app — Cutline hands off position</label>

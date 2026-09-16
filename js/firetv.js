@@ -117,6 +117,16 @@
   function pinSet(pin) {
     try { localStorage.setItem("cutline:firetv:pin:v1", String(pin)); } catch (e) {}
   }
+  function prefGet(k, fb) { try { var v = localStorage.getItem(k); return v == null ? fb : JSON.parse(v); } catch (e) { return fb; } }
+  function prefSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function getAutoplay() { return !!prefGet("cutline:firetv:autoplay:v1", false); }
+  function setAutoplay(v) { prefSet("cutline:firetv:autoplay:v1", !!v); }
+  function getRecap() { var v = prefGet("cutline:firetv:recap:v1", true); return v !== false; }
+  function setRecap(v) { prefSet("cutline:firetv:recap:v1", !!v); }
+  function parseSleepMinutes(text) {
+    var m = String(text || "").match(/(\d+)\s*(min|minute)/);
+    return m ? Math.max(1, Math.min(120, parseInt(m[1], 10))) : 0;
+  }
   function bindMediaKeys(handlers) {
     try {
       if (!("mediaSession" in navigator)) return;
@@ -126,5 +136,5 @@
       });
     } catch (e) {}
   }
-  return { isFireTV: isFireTV, isLowPower: isLowPower, applyPlatformClass: applyPlatformClass, keepAwake: keepAwake, setMediaSession: setMediaSession, parseAlexaIntent: parseAlexaIntent, networkKind: networkKind, deviceProfile: deviceProfile, systemTime: systemTime, parseAlexaVoice: parseAlexaVoice, getRecents: getRecents, pushRecent: pushRecent, pinGet: pinGet, pinCheck: pinCheck, pinSet: pinSet, bindMediaKeys: bindMediaKeys };
+  return { isFireTV: isFireTV, isLowPower: isLowPower, applyPlatformClass: applyPlatformClass, keepAwake: keepAwake, setMediaSession: setMediaSession, parseAlexaIntent: parseAlexaIntent, networkKind: networkKind, deviceProfile: deviceProfile, systemTime: systemTime, parseAlexaVoice: parseAlexaVoice, getRecents: getRecents, pushRecent: pushRecent, pinGet: pinGet, pinCheck: pinCheck, pinSet: pinSet, bindMediaKeys: bindMediaKeys, getAutoplay: getAutoplay, setAutoplay: setAutoplay, getRecap: getRecap, setRecap: setRecap, parseSleepMinutes: parseSleepMinutes };
 });

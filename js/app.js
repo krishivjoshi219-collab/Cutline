@@ -823,8 +823,79 @@
       b.addEventListener("click", function (e) { if (FTV && !state.kidsOnly) { e.stopPropagation(); openPin(); } }, true);
     });
   }
+  function initKillerFeatures() {
+    var sleepTimer = null, sleepLeft = 0, sleepTick = null, pendingSleep = false;
+    function clearSleep() { if (sleepTimer) clearTimeout(sleepTimer); if (sleepTick) clearInterval(sleepTick); sleepTimer = sleepTick = null; pendingSleep = false; }
+    function paintSleep() {
+      var t = $("sleepText"); if (t) t.textContent = sleepTimer ? ("sleep in " + sleepLeft + "m · ends on scene boundary") : "ends on scene boundary";
+      document.querySelectorAll("[data-sleep]").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(parseInt(b.dataset.sleep, 10) === (sleepTimer ? sleepLeft : 0)));
+      });
+    }
+    document.querySelectorAll("[data-sleep]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        clearSleep();
+        var m = parseInt(b.dataset.sleep, 10);
+        if (m > 0) {
+          sleepLeft = m;
+          sleepTimer = setTimeout(function () {
+            pendingSleep = true;
+            var cur = player ? player.current() : null;
+            if (!player || !player.playing || !cur) { doSleep(); } else { var t = $("sleepText"); if (t) t.textContent = "sleeping at end of this scene…"; }
+          }, m * 60 * 1000);
+          sleepTick = setInterval(function () { sleepLeft = Math.max(0, sleepLeft - 1); if (!sleepLeft) { if (sleepTick) clearInterval(sleepTick); } paintSleep(); }, 60000);
+        }
+        paintSleep(); refreshFocusables();
+      });
+    });
+    function doSleep() { clearSleep(); try { if (player) player.pause(); } catch (e) {} var p = $("ppBtn"); if (p) p.textContent = "▶ Play"; paintSleep(); show("home"); }
+    window.__cutlineSleepArmed = function () { return pendingSleep; };
+    window.__cutlineSleepFire = function () { if (pendingSleep) doSleep(); };
+    var miss = $("missBtn");
+    if (miss) miss.addEventListener("click", function () {
+      var card = $("gapCard"); if (!card || !player || !state.route) return;
+      var i = player.index, route = state.route.scenes;
+      var cur = route[i], prev = route[i - 1];
+      if (!cur) { card.hidden = false; card.textContent = "Nothing playing yet — hit Play first."; return; }
+      var gapStart = prev ? prev.end : 0, gapEnd = cur.start, skipped = S.fmt(Math.max(0, gapEnd - gapStart)) + " skipped";
+      var between = SCENES.filter(function (s) { return s.end > gapStart && s.start < gapEnd; });
+      var names = between.slice(0, 3).map(function (s) { return s.title; }).join(" · ") || "establishing / travel";
+      card.hidden = false;
+      card.innerHTML = "<b>✂ You skipped " + escapeHtml(skipped) + ":</b> " + escapeHtml(names) + (between.length > 3 ? " (+" + (between.length - 3) + " more)" : "") + "<br><span style='color:var(--muted)'>" + escapeHtml(cur.synopsis) + "</span>";
+      setFocus(miss);
+    });
+    var at = $("autoplayToggle");
+    function paintAuto() { if (at && FTV) at.setAttribute("aria-pressed", String(FTV.getAutoplay())); if (at && FTV) at.textContent = "Auto-next: " + (FTV.getAutoplay() ? "on" : "off"); }
+    if (at) { paintAuto(); at.addEventListener("click", function () { if (FTV) FTV.setAutoplay(!FTV.getAutoplay()); paintAuto(); }); }
+    var rt = $("recapToggle");
+    function paintRecap() { if (rt && FTV) rt.setAttribute("aria-pressed", String(FTV.getRecap())); if (rt && FTV) rt.textContent = "Recap pre-roll: " + (FTV.getRecap() ? "on" : "off"); }
+    if (rt) { paintRecap(); rt.addEventListener("click", function () { if (FTV) FTV.setRecap(!FTV.getRecap()); paintRecap(); }); }
+    var bb = $("bingeBtn");
+    if (bb) bb.addEventListener("click", function () {
+      var q = OTT && OTT.getBinge ? OTT.getBinge()[0] : null;
+      var box = $("doneBox");
+      if (box) { box.hidden = false; box.innerHTML = q ? ("⏭ Up next: <b>" + escapeHtml(q.title) + "</b> · " + escapeHtml(q.dur) + " — " + escapeHtml(q.note) + ". Same cut shape applied.") : "⏭ Up next queued with the same cut shape."; }
+    });
+    var _origEnded = onEnded;
+    onEnded = function () {
+      _origEnded();
+      try { if (window.__cutlineSleepArmed && window.__cutlineSleepArmed()) { window.__cutlineSleepFire(); return; } } catch (e) {}
+      try { if (FTV && FTV.getAutoplay() && OTT && OTT.getBinge) { var q2 = OTT.getBinge()[0]; var bx = $("doneBox"); if (bx && q2) bx.innerHTML += "<br>▶ Auto-next on — starting <b>" + escapeHtml(q2.title) + "</b> cut…"; } } catch (e) {}
+    };
+    var _origScene = onScene;
+    onScene = function (scene, i, n) {
+      _origScene(scene, i, n);
+      try { if (window.__cutlineSleepArmed && window.__cutlineSleepArmed()) window.__cutlineSleepFire(); } catch (e) {}
+      try {
+        if (FTV && FTV.getRecap() && i === 0) {
+          var t = $("transitionToast"); if (t) { $("toastTitle").textContent = "Recap: " + scene.title + " — " + scene.synopsis; t.classList.add("show"); setTimeout(function () { t.classList.remove("show"); }, 2200); }
+        }
+      } catch (e) {}
+    };
+  }
   initOttFireTv();
   initFireOSBuiltIn();
+  initKillerFeatures();
   refreshFocusables();
   show(savedHash ? "choose" : "home");
   if (savedHash) rebuild();

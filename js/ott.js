@@ -59,5 +59,11 @@
     return getWatchlist();
   }
   function isInWatchlist(title) { return getWatchlist().indexOf(title) !== -1; }
-  return { PROVIDERS: PROVIDERS, CATALOG: CATALOG, getConnected: getConnected, setConnected: setConnected, byId: byId, deepLink: deepLink, tryOpen: tryOpen, searchCatalog: searchCatalog, getWatchlist: getWatchlist, toggleWatch: toggleWatch, isInWatchlist: isInWatchlist };
+  function getBinge() {
+    return [
+      { title: "Harbor Lights S01E08", dur: "51:40", note: "auto-cut ready · same 15-min shape" },
+      { title: "Harbor Lights S01E09 (finale)", dur: "58:02", note: "payoff-heavy · spoiler-guarded" }
+    ];
+  }
+  return { PROVIDERS: PROVIDERS, CATALOG: CATALOG, getConnected: getConnected, setConnected: setConnected, byId: byId, deepLink: deepLink, tryOpen: tryOpen, searchCatalog: searchCatalog, getWatchlist: getWatchlist, toggleWatch: toggleWatch, isInWatchlist: isInWatchlist, getBinge: getBinge };
 });
