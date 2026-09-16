@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "CUTLINE",
+    "slug": "cutline",
+    "version": "0.1.0",
+    "orientation": "landscape",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "tv.cutline.app",
+      "versionCode": 1,
+      "isTV": true,
+      "leanbackLauncher": true,
+      "permissions": []
+    },
+    "plugins": []
+  }
+}
