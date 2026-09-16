@@ -85,11 +85,9 @@ jobs:
               sed -i 's|</resources>|    <color name="splashscreen_background">#0A0D14</color>\n</resources>|' "$COLORS_FILE"
             fi
           else
-            cat << 'EOF' > "$COLORS_FILE"
-<resources>
-    <color name="splashscreen_background">#0A0D14</color>
-</resources>
-EOF
+            echo '<resources>' > "$COLORS_FILE"
+            echo '    <color name="splashscreen_background">#0A0D14</color>' >> "$COLORS_FILE"
+            echo '</resources>' >> "$COLORS_FILE"
           fi
           cat "$COLORS_FILE"
 
