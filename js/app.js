@@ -6,8 +6,12 @@
   });
   var S = window.CutlineSolver;
   var EP = window.EPISODE;
-  var IS_FIRETV = /AFT|AFTM|AFTT|Fire TV|Fire OS|KFSUWI|Silk-Accelerated/i.test(navigator.userAgent || "") || (window.matchMedia && matchMedia("(min-width:1280px) and (min-height:720px)").matches && /Linux armv|Android/i.test(navigator.userAgent || ""));
+  var FTV = window.CutlineFireTV || null;
+  var OTT = window.CutlineOTT || null;
+  if (FTV) { try { FTV.applyPlatformClass(); } catch (e) {} }
+  var IS_FIRETV = FTV ? FTV.isFireTV() : /AFT|AFTM|AFTT|Fire TV|Fire OS|KFSUWI|Silk-Accelerated/i.test(navigator.userAgent || "");
   try { if (IS_FIRETV) document.body.classList.add("firetv"); } catch (e) {}
+  if (FTV && FTV.isLowPower()) { try { document.body.classList.add("reduce-motion"); } catch (e) {} }
   function getQuery() { var q = {}; try { (location.search || "").replace(/^\?/, "").split("&").forEach(function (p) { var kv = p.split("="); if (kv[0]) q[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || ""); }); } catch (e) {} return q; }
 
   var state = {
@@ -655,6 +659,85 @@
     _rh.appendChild(_sb);
     document.body.classList.toggle("spoiler-on", !!state.spoiler);
   }
+  function initOttFireTv() {
+    if (FTV) {
+      try {
+        var ai = FTV.parseAlexaIntent();
+        if (ai.voice) applyNL(ai.voice);
+        FTV.setMediaSession(routeLabel() + " · CUTLINE", "Harbor Lights");
+        var nb = $("ottNetBadge"); if (nb) nb.textContent = "FireOS net: " + FTV.networkKind();
+      } catch (e) {}
+      try { FTV.keepAwake($("setWake") ? $("setWake").checked !== false : true); } catch (e) {}
+    }
+    if (!OTT) return;
+    var rail = $("ottRail"); var pick = $("ottProviderPick");
+    function paint() {
+      var conn = OTT.getConnected();
+      if (rail) {
+        rail.innerHTML = "";
+        OTT.PROVIDERS.forEach(function (p) {
+          var on = conn.indexOf(p.id) !== -1;
+          var b = document.createElement("button");
+          b.className = "ott-card focusable"; b.setAttribute("aria-pressed", on ? "true" : "false");
+          b.innerHTML = "<span class='ott-ico' style='background:" + p.color + "'>" + p.short + "</span><span><b>" + p.name + "</b><small>" + (on ? "connected · OK to toggle" : "press OK to connect") + "</small></span>";
+          b.addEventListener("click", function () {
+            var c = OTT.getConnected(); var i = c.indexOf(p.id);
+            if (i === -1) c.push(p.id); else c.splice(i, 1);
+            OTT.setConnected(c); paint(); syncPick();
+          });
+          rail.appendChild(b);
+        });
+      }
+      syncPick();
+    }
+    function syncPick() {
+      if (!pick) return; var conn = OTT.getConnected();
+      pick.innerHTML = "";
+      conn.forEach(function (id) {
+        var p = OTT.byId(id); if (!p) return;
+        var o = document.createElement("option"); o.value = id; o.textContent = p.name; pick.appendChild(o);
+      });
+      if (!pick.options.length) {
+        var o2 = document.createElement("option"); o2.value = "prime"; o2.textContent = "Prime Video (default)"; pick.appendChild(o2);
+      }
+    }
+    function doSearch() {
+      var q = $("ottSearch") ? $("ottSearch").value : "";
+      var box = $("ottResults"); if (!box) return; box.innerHTML = "";
+      var conn = OTT.getConnected();
+      OTT.searchCatalog(q).forEach(function (hit) {
+        var avail = hit.providers.filter(function (id) { return conn.indexOf(id) !== -1; });
+        var row = document.createElement("div"); row.className = "ott-hit";
+        row.innerHTML = "<span><b>" + escapeHtml(hit.title) + "</b> <span style='color:var(--muted)'>· " + escapeHtml(hit.dur) + " · " + escapeHtml(hit.note) + "</span></span>";
+        var pv = document.createElement("span"); pv.className = "prov";
+        (avail.length ? avail : hit.providers.slice(0, 2)).forEach(function (id) {
+          var p = OTT.byId(id); if (!p) return;
+          var b = document.createElement("button"); b.className = "chip focusable";
+          b.textContent = (avail.length ? "▶ " : "") + p.name;
+          b.addEventListener("click", function () { OTT.tryOpen(id, hit.title); });
+          pv.appendChild(b);
+        });
+        row.appendChild(pv); box.appendChild(row);
+      });
+      refreshFocusables();
+    }
+    paint();
+    var go = $("ottGo"); if (go) go.addEventListener("click", doSearch);
+    var si = $("ottSearch"); if (si) si.addEventListener("keydown", function (e) { e.stopPropagation(); if (e.key === "Enter") doSearch(); });
+    var open = $("ottOpenBtn"); if (open) open.addEventListener("click", function () {
+      var id = pick ? pick.value : "prime";
+      var l = OTT.tryOpen(id, "Harbor Lights S01E07");
+      if (l) { try { window.open(l.web, "_blank", "noopener"); } catch (e) { location.href = l.web; } }
+    });
+    var no = $("navOtt"); if (no) no.addEventListener("click", function () { show("home"); setTimeout(function () { var r = $("ottRail"); if (r) { var f = r.querySelector(".focusable"); if (f) setFocus(f); } }, 50); });
+    var ns = $("navSettings"); if (ns) ns.addEventListener("click", function () { $("settingsModal").hidden = false; setFocus($("settingsClose")); });
+    var sc = $("settingsClose"); if (sc) sc.addEventListener("click", function () { $("settingsModal").hidden = true; setFocus($("navSettings")); });
+    var rs = $("setResetOtt"); if (rs) rs.addEventListener("click", function () { OTT.setConnected([]); paint(); });
+    var sw = $("setWake"); if (sw) sw.addEventListener("change", function () { if (FTV) FTV.keepAwake(sw.checked); });
+    var sm = $("setMotion"); if (sm) sm.addEventListener("change", function () { document.body.classList.toggle("reduce-motion", sm.checked); });
+    var ss = $("setSpoiler"); if (ss) ss.addEventListener("change", function () { state.spoiler = ss.checked; document.body.classList.toggle("spoiler-on", state.spoiler); });
+  }
+  initOttFireTv();
   refreshFocusables();
   show(savedHash ? "choose" : "home");
   if (savedHash) rebuild();

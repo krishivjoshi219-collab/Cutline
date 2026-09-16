@@ -10,6 +10,9 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2322d3ee'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='18' font-weight='900'%3E%E2%9C%82%3C/text%3E%3C/svg%3E">
 <title>CUTLINE — One click. Give me the story.</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="CUTLINE">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,7 +23,7 @@
   <div class="logo">CUTLINE<span class="logo-live">LIVE DEMO</span></div>
   <div class="tagline">Keep the story. Cut the wandering. <b>Not a recap — a version you can finish.</b></div>
   <div class="episode-badge"><b id="epTitle">HARBOR LIGHTS · S01E07</b><span id="epMeta">Full episode 52:14 · 28 scenes · Fire TV demo</span></div>
-  <nav class="topnav" aria-label="Launcher nav"><button class="pill focusable" id="navHome" aria-pressed="true">Home</button><button class="pill focusable" id="navCuts" aria-pressed="false">Cuts</button><button class="pill focusable" id="navPlay" aria-pressed="false">Now playing</button></nav>
+  <nav class="topnav" aria-label="Launcher nav"><button class="pill focusable" id="navHome" aria-pressed="true">Home</button><button class="pill focusable" id="navCuts" aria-pressed="false">Cuts</button><button class="pill focusable" id="navPlay" aria-pressed="false">Now playing</button><button class="pill focusable" id="navOtt" title="All OTT apps">OTT</button><button class="pill focusable" id="navSettings" title="Fire TV settings">⚙</button></nav>
 </header>
 <section class="hero-one-click" aria-label="One-click cut">
   <div class="hero-copy">
@@ -81,6 +84,13 @@
       <button class="tap-card vibe focusable" data-vibe="intense">🔥<span>Intense</span></button>
       <button class="tap-card vibe focusable" data-vibe="kids">🛟<span>Kids-safe</span></button>
     </div>
+    <h2 class="section-title">All your OTT in one cut <small style="color:var(--muted);font-size:15px">— Prime · Netflix · Disney+ · Max · Apple · Hulu</small></h2>
+    <div class="ott-search-row">
+      <input id="ottSearch" class="focusable" type="text" enterkeyhint="search" inputmode="search" placeholder='Universal search: "Harbor Lights" or "mystery show"'>
+      <button class="btn focusable" id="ottGo">Search OTT</button>
+    </div>
+    <div class="rail ott-rail" id="ottRail" role="group" aria-label="Connected OTT apps"></div>
+    <div id="ottResults" class="ott-results" aria-live="polite"></div>
     <h2 class="section-title">My cuts <small id="histClear" style="float:right"><button class="chip focusable" id="clearHist">clear</button></small></h2>
     <div class="rail" id="histRail" aria-live="polite"><div class="empty">No cuts yet — hit Play and we'll save it here.</div></div>
   </section>
@@ -190,6 +200,14 @@
           <button class="btn focusable" id="ppBtn">⏸ Pause</button>
           <button class="btn ghost focusable" id="nextBtn">Next scene ⏭</button>
         </div>
+        <div class="ott-open-row card">
+          <label class="field" for="ottProviderPick" style="margin:0">Finish full episode in its home app — Cutline hands off position</label>
+          <div class="row" style="margin-top:10px">
+            <select id="ottProviderPick" class="focusable ott-select" aria-label="Choose OTT app"></select>
+            <button class="btn ghost focusable" id="ottOpenBtn">Open full in OTT ⧉</button>
+            <span id="ottNetBadge" style="color:var(--muted);font-size:17px"></span>
+          </div>
+        </div>
         <div class="cut-progress" aria-hidden="true"><div id="cutBar"></div></div>
         <div class="progress-meta">
           <span>Cut elapsed <b id="cutElapsed">00:00</b> / <span id="cutTotal">00:00</span></span>
@@ -214,6 +232,19 @@
   </div>
 </div>
 
+<div id="settingsModal" hidden role="dialog" aria-label="Fire TV settings">
+  <div class="tech-box">
+    <h2 class="section-title">Fire TV settings</h2>
+    <label class="set-row"><input type="checkbox" id="setWake" checked> Keep screen awake while playing (recommended on Fire Stick)</label>
+    <label class="set-row"><input type="checkbox" id="setSaver"> Data saver: prefer simulated footage on metered Wi-Fi</label>
+    <label class="set-row"><input type="checkbox" id="setSpoiler" checked> Hide spoiler titles by default</label>
+    <label class="set-row"><input type="checkbox" id="setMotion"> Reduce motion (best for Stick Lite / 1st-gen)</label>
+    <div class="row" style="margin-top:14px">
+      <button class="btn focusable" id="settingsClose">Done</button>
+      <button class="btn ghost focusable" id="setResetOtt">Disconnect all OTT</button>
+    </div>
+  </div>
+</div>
 <footer>
   Fire TV: <kbd>◀ ▲ ▼ ▶</kbd> move · <kbd>OK</kbd> select · <kbd>Back</kbd> back · <kbd>▶/⏸</kbd> play/pause · <kbd>⏪ ⏩</kbd> prev/next scene · hold <kbd>Alexa</kbd> for voice &nbsp;·&nbsp;
   CUTLINE · Fire TV track · Amazon App Dev Hackathon 2026 · “Not a recap. A version you can finish.” &nbsp;·&nbsp; Made for busy humans.
@@ -224,6 +255,8 @@
 <script defer src="js/episode.js"></script>
 <script defer src="js/scenes.js"></script>
 <script defer src="js/player.js"></script>
+<script defer src="js/ott.js"></script>
+<script defer src="js/firetv.js"></script>
 <script defer src="js/app.js"></script>
 </body>
 </html>
