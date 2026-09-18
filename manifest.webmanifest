@@ -1,0 +1,19 @@
+{
+  "name": "CUTLINE — Give me the story",
+  "short_name": "CUTLINE",
+  "description": "Keep the story. Cut the wandering. Time-budgeted viewing routes for Fire TV.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#070d24",
+  "theme_color": "#070d24",
+  "categories": ["entertainment", "video"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2322d3ee'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='18' font-weight='900'%3E%E2%9C%82%3C/text%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

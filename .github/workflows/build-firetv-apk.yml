@@ -52,30 +52,26 @@ jobs:
           echo "504667f4c0de7af1a06de9f4b1727b84351f2910" >  /usr/local/lib/android/sdk/licenses/android-sdk-preview-license
           echo "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" >  /usr/local/lib/android/sdk/licenses/google-gdk-license
 
-      # ── 5. Install Expo CLI ───────────────────────────────────────────────
-      - name: Install Expo CLI
-        run: npm install -g expo-cli
-
-      # ── 6. Install npm dependencies ───────────────────────────────────────
+      # ── 5. Install npm dependencies ───────────────────────────────────────
       - name: Install dependencies
         working-directory: cutline-rn
         run: npm install
 
-      # ── 7. Expo prebuild → generates android/ ─────────────────────────────
+      # ── 6. Expo prebuild → generates android/ ─────────────────────────────
       - name: Expo prebuild (Android)
         working-directory: cutline-rn
         run: npx expo prebuild --platform android --no-install
         env:
           EXPO_NO_TELEMETRY: 1
 
-      # ── 8. Fix local.properties with correct SDK path ─────────────────────
+      # ── 7. Fix local.properties with correct SDK path ─────────────────────
       # Expo prebuild may write a wrong sdk.dir — override it
       - name: Fix local.properties
         run: |
           echo "sdk.dir=/usr/local/lib/android/sdk" > cutline-rn/android/local.properties
           cat cutline-rn/android/local.properties
 
-      # ── 9. Ensure splashscreen color resource exists ──────────────────────
+      # ── 8. Ensure splashscreen color resource exists ──────────────────────
       - name: Ensure splashscreen color resource exists
         run: |
           mkdir -p cutline-rn/android/app/src/main/res/values
@@ -91,7 +87,7 @@ jobs:
           fi
           cat "$COLORS_FILE"
 
-      # ── 10. Make gradlew executable ───────────────────────────────────────
+      # ── 9. Make gradlew executable ────────────────────────────────────────
       - name: Make gradlew executable
         run: chmod +x cutline-rn/android/gradlew
 

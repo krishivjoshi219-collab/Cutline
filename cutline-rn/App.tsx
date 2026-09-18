@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import type { TVEvent } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Video, { type VideoRef } from "react-native-video";
+import Video, { type VideoRef, type OnProgressData, type OnLoadData } from "react-native-video";
 import { useKeepAwake } from "react-native-keep-awake";
 import { buildRoute, fmt, fmtRange, type Thread } from "./src/solver";
 import { EPISODE, SCENES, DEMO_VIDEO, OTT_PROVIDERS } from "./src/data";
@@ -44,7 +44,13 @@ export default function App(): JSX.Element {
   const [kidsOnly, setKidsOnly] = useState<boolean>(false);
   const [sceneIdx, setSceneIdx] = useState<number>(0);
   const [playing, setPlaying] = useState<boolean>(false);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const [cutElapsed, setCutElapsed] = useState<number>(0);
+  const [jumpToast, setJumpToast] = useState<string | null>(null);
+
   const videoRef = useRef<VideoRef>(null);
+  const lastSceneRef = useRef<number>(-1);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const route = useMemo(
     () => buildRoute(SCENES, budget, { thread, mood: intense ? "intense" : null, kidsOnly }),
@@ -52,7 +58,11 @@ export default function App(): JSX.Element {
   );
 
   const routeKey = useMemo(() => route.ids.join(","), [route.ids]);
-  useEffect(() => { setSceneIdx(0); }, [routeKey]);
+  useEffect(() => {
+    setSceneIdx(0);
+    setCutElapsed(0);
+    lastSceneRef.current = -1;
+  }, [routeKey]);
 
   const goNext = useCallback(() => {
     setSceneIdx((i) => Math.min(Math.max(route.scenes.length - 1, 0), i + 1));
@@ -77,7 +87,8 @@ export default function App(): JSX.Element {
         try {
           const p = JSON.parse(v) as PersistedState;
           if (typeof p.budget === "number") setBudget(p.budget);
-          if (p.thread === "all" || p.thread === "mystery" || p.thread === "heart" || p.thread === "chase") setThread(p.thread);
+          if (p.thread === "all" || p.thread === "mystery" || p.thread === "heart" || p.thread === "chase")
+            setThread(p.thread);
           setIntense(Boolean(p.intense));
           setKidsOnly(Boolean(p.kidsOnly));
         } catch {
@@ -85,7 +96,9 @@ export default function App(): JSX.Element {
         }
       })
       .catch(() => undefined);
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const onTVEvent = useCallback(
@@ -103,8 +116,14 @@ export default function App(): JSX.Element {
   useEffect(() => {
     if (!isFireOS) return undefined;
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (screen === "play") { setScreen("choose"); return true; }
-      if (screen === "choose") { setScreen("home"); return true; }
+      if (screen === "play") {
+        setScreen("choose");
+        return true;
+      }
+      if (screen === "choose") {
+        setScreen("home");
+        return true;
+      }
       return false;
     });
     return () => sub.remove();
@@ -117,18 +136,119 @@ export default function App(): JSX.Element {
       const ok = await Linking.canOpenURL(p.app);
       await Linking.openURL(ok ? p.app : p.web);
     } catch {
-      try { await Linking.openURL(p.web); } catch { /* no-op */ }
+      try {
+        await Linking.openURL(p.web);
+      } catch {
+        /* no-op */
+      }
     }
   }, []);
 
   const cur = route.scenes[sceneIdx] ?? null;
-  const onVideoEnd = useCallback(() => { goNext(); }, [goNext]);
+
+  // Proportional time mapping between 52:14 episode and sample video
+  const mapToVideo = useCallback(
+    (epSec: number): number => {
+      if (!videoDuration || videoDuration <= 0) return epSec;
+      return (epSec / EPISODE.durationSec) * videoDuration;
+    },
+    [videoDuration]
+  );
+
+  const mapToEpisode = useCallback(
+    (vidSec: number): number => {
+      if (!videoDuration || videoDuration <= 0) return vidSec;
+      return (vidSec / videoDuration) * EPISODE.durationSec;
+    },
+    [videoDuration]
+  );
+
+  // Seek video when scene changes
+  const seekToScene = useCallback(
+    (idx: number) => {
+      const scene = route.scenes[idx];
+      if (!scene || !videoRef.current) return;
+      const targetVid = mapToVideo(scene.start);
+      try {
+        videoRef.current.seek(targetVid);
+      } catch {
+        // seek error safety
+      }
+
+      // Detect non-sequential jumps (jump cut toast)
+      const prevIdx = lastSceneRef.current;
+      if (prevIdx >= 0 && idx !== prevIdx + 1 && idx !== prevIdx) {
+        if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+        setJumpToast(`✂ CUTLINE JUMP · ${scene.title}`);
+        toastTimeoutRef.current = setTimeout(() => {
+          setJumpToast(null);
+        }, 2500);
+      }
+      lastSceneRef.current = idx;
+    },
+    [route.scenes, mapToVideo]
+  );
+
+  useEffect(() => {
+    if (screen === "play" && cur) {
+      seekToScene(sceneIdx);
+    }
+  }, [sceneIdx, screen, seekToScene, cur]);
+
+  const onLoad = useCallback(
+    (data: OnLoadData) => {
+      setVideoDuration(data.duration);
+      if (cur && videoRef.current) {
+        const targetVid =
+          data.duration > 0 ? (cur.start / EPISODE.durationSec) * data.duration : cur.start;
+        videoRef.current.seek(targetVid);
+      }
+    },
+    [cur]
+  );
+
+  const onProgress = useCallback(
+    (data: OnProgressData) => {
+      if (!cur || !playing || screen !== "play") return;
+      const endVid = mapToVideo(cur.end);
+
+      // Advance scene when current scene segment finishes
+      if (endVid > 0 && data.currentTime >= endVid - 0.2) {
+        if (sceneIdx < route.scenes.length - 1) {
+          goNext();
+        } else {
+          setPlaying(false);
+        }
+      }
+
+      // Compute total elapsed cut time
+      let prevScenesDur = 0;
+      for (let i = 0; i < sceneIdx; i++) {
+        const s = route.scenes[i];
+        prevScenesDur += s.end - s.start;
+      }
+      const epCurrent = mapToEpisode(data.currentTime);
+      const currentSceneSec = Math.max(0, Math.min(cur.end, epCurrent) - cur.start);
+      setCutElapsed(prevScenesDur + currentSceneSec);
+    },
+    [cur, playing, screen, mapToVideo, mapToEpisode, sceneIdx, route.scenes, goNext]
+  );
+
+  const onVideoEnd = useCallback(() => {
+    if (sceneIdx < route.scenes.length - 1) {
+      goNext();
+    } else {
+      setPlaying(false);
+    }
+  }, [sceneIdx, route.scenes.length, goNext]);
 
   return (
     <View style={s.root}>
       <View style={s.sysbar}>
         <Text style={s.sysBadge}>FIRE TV</Text>
-        <Text style={s.sysText}>CUTLINE · {EPISODE.title} · {EPISODE.durationLabel}</Text>
+        <Text style={s.sysText}>
+          CUTLINE · {EPISODE.title} · {EPISODE.durationLabel}
+        </Text>
         <View style={s.nav}>
           {(["home", "choose", "play"] as Screen[]).map((t) => (
             <TVButton key={t} title={t.toUpperCase()} active={screen === t} onPress={() => setScreen(t)} />
@@ -140,10 +260,21 @@ export default function App(): JSX.Element {
         <View style={s.hero}>
           <Text style={s.eyebrow}>FIRE TV · FIREOS · 10-FOOT</Text>
           <Text style={s.h1}>The 52-minute episode, cut to what matters.</Text>
-          <Text style={s.sub}>Pick a time, press OK. Story holds. {fmt(EPISODE.durationSec - route.totalDuration)} saved.</Text>
+          <Text style={s.sub}>
+            Pick a time, press OK. Story holds. {fmt(EPISODE.durationSec - route.totalDuration)} saved.
+          </Text>
           <View style={s.row}>
             {BUDGETS.map((b) => (
-              <TVButton key={b} title={b >= FULL_BUDGET ? "FULL" : fmt(b)} active={budget === b} onPress={() => { setBudget(b); setScreen("choose"); }} preferred={b === 900} />
+              <TVButton
+                key={b}
+                title={b >= FULL_BUDGET ? "FULL" : fmt(b)}
+                active={budget === b}
+                onPress={() => {
+                  setBudget(b);
+                  setScreen("choose");
+                }}
+                preferred={b === 900}
+              />
             ))}
           </View>
           <View style={s.row}>
@@ -160,7 +291,12 @@ export default function App(): JSX.Element {
             <Text style={s.h2}>TIME</Text>
             <View style={s.row}>
               {BUDGETS.map((b) => (
-                <TVButton key={b} title={b >= FULL_BUDGET ? "FULL" : fmt(b)} active={budget === b} onPress={() => setBudget(b)} />
+                <TVButton
+                  key={b}
+                  title={b >= FULL_BUDGET ? "FULL" : fmt(b)}
+                  active={budget === b}
+                  onPress={() => setBudget(b)}
+                />
               ))}
             </View>
             <Text style={s.h2}>THREAD</Text>
@@ -170,20 +306,40 @@ export default function App(): JSX.Element {
               ))}
             </View>
             <View style={s.row}>
-              <TVButton title={intense ? "INTENSE: on" : "INTENSE: off"} active={intense} onPress={() => setIntense(!intense)} />
-              <TVButton title={kidsOnly ? "KIDS: on" : "KIDS: off"} active={kidsOnly} onPress={() => setKidsOnly(!kidsOnly)} />
+              <TVButton
+                title={intense ? "INTENSE: on" : "INTENSE: off"}
+                active={intense}
+                onPress={() => setIntense(!intense)}
+              />
+              <TVButton
+                title={kidsOnly ? "KIDS: on" : "KIDS: off"}
+                active={kidsOnly}
+                onPress={() => setKidsOnly(!kidsOnly)}
+              />
             </View>
-            <TVButton title={"▶ PLAY " + fmt(route.totalDuration) + " CUT"} preferred onPress={() => { setSceneIdx(0); setPlaying(true); setScreen("play"); }} />
+            <TVButton
+              title={"▶ PLAY " + fmt(route.totalDuration) + " CUT"}
+              preferred
+              onPress={() => {
+                setSceneIdx(0);
+                setPlaying(true);
+                setScreen("play");
+              }}
+            />
           </View>
           <View style={s.col}>
-            <Text style={s.h2}>{route.scenes.length} SCENES · {fmt(route.totalDuration)} · {Math.round(route.coverage * 100)}% KEPT</Text>
+            <Text style={s.h2}>
+              {route.scenes.length} SCENES · {fmt(route.totalDuration)} · {Math.round(route.coverage * 100)}% KEPT
+            </Text>
             <FlatList
               data={route.scenes}
               keyExtractor={(x) => x.id}
               renderItem={({ item, index }) => (
                 <View style={s.routeRow}>
                   <Text style={s.rng}>{fmtRange(item)}</Text>
-                  <Text style={s.ttl}>{index + 1}. {item.title}</Text>
+                  <Text style={s.ttl}>
+                    {index + 1}. {item.title}
+                  </Text>
                 </View>
               )}
             />
@@ -194,33 +350,76 @@ export default function App(): JSX.Element {
       {screen === "play" && (
         <View style={s.cols}>
           <View style={s.col}>
-            <Video
-              ref={videoRef}
-              source={{ uri: DEMO_VIDEO }}
-              style={s.video}
-              resizeMode="contain"
-              paused={!playing}
-              controls={!isTV}
-              preventsDisplaySleepDuringVideoPlayback
-              onEnd={onVideoEnd}
-              onError={(e) => console.warn("[cutline] video error", e.error)}
-            />
+            <View style={s.videoWrap}>
+              <Video
+                ref={videoRef}
+                source={{ uri: DEMO_VIDEO }}
+                style={s.video}
+                resizeMode="contain"
+                paused={!playing}
+                controls={!isTV}
+                preventsDisplaySleepDuringVideoPlayback
+                onLoad={onLoad}
+                onProgress={onProgress}
+                onEnd={onVideoEnd}
+                onError={(e) => console.warn("[cutline] video error", e.error)}
+              />
+              {jumpToast && (
+                <View style={s.toast}>
+                  <Text style={s.toastT}>{jumpToast}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Cut countdown & progress */}
+            <View style={s.progressWrap}>
+              <View style={s.progressBar}>
+                <View
+                  style={[
+                    s.progressFill,
+                    {
+                      width: `${Math.min(
+                        100,
+                        (cutElapsed / Math.max(1, route.totalDuration)) * 100
+                      )}%`,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={s.progressText}>
+                Cut elapsed {fmt(cutElapsed)} / {fmt(route.totalDuration)} · Remaining{" "}
+                {fmt(Math.max(0, route.totalDuration - cutElapsed))} · Scene {sceneIdx + 1} of{" "}
+                {route.scenes.length}
+              </Text>
+            </View>
+
             <Text style={s.h2}>{cur ? `${fmtRange(cur)} · ${cur.title}` : "—"}</Text>
             <Text style={s.sub}>{cur?.synopsis ?? ""}</Text>
             <View style={s.row}>
               <TVButton title="‹ Back" onPress={() => setScreen("choose")} />
               <TVButton title="⏮ Prev" onPress={() => setSceneIdx((i) => Math.max(0, i - 1))} />
-              <TVButton title={playing ? "⏸ Pause" : "▶ Play"} preferred active onPress={() => setPlaying(!playing)} />
-              <TVButton title="Next ⏭" onPress={() => setSceneIdx((i) => Math.min(route.scenes.length - 1, i + 1))} />
+              <TVButton
+                title={playing ? "⏸ Pause" : "▶ Play"}
+                preferred
+                active
+                onPress={() => setPlaying(!playing)}
+              />
+              <TVButton
+                title="Next ⏭"
+                onPress={() => setSceneIdx((i) => Math.min(route.scenes.length - 1, i + 1))}
+              />
             </View>
           </View>
           <View style={s.col}>
-            <Text style={s.h2}>UP NEXT</Text>
+            <Text style={s.h2}>UP NEXT IN THIS CUT</Text>
             <FlatList
               data={route.scenes}
               keyExtractor={(x) => x.id}
               renderItem={({ item, index }) => (
-                <TouchableOpacity hasTVPreferredFocus={index === sceneIdx} onPress={() => setSceneIdx(index)}>
+                <TouchableOpacity
+                  hasTVPreferredFocus={index === sceneIdx}
+                  onPress={() => setSceneIdx(index)}
+                >
                   <View style={[s.routeRow, index === sceneIdx && s.now]}>
                     <Text style={s.rng}>{fmtRange(item)}</Text>
                     <Text style={s.ttl}>{item.title}</Text>
@@ -264,8 +463,23 @@ function TVButton({ title, onPress, active, preferred }: TVButtonProps): JSX.Ele
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#080b14", padding: 28 },
-  sysbar: { flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: 1, borderBottomColor: "#1e293b", paddingBottom: 12 },
-  sysBadge: { color: "#94a3b8", borderWidth: 1, borderColor: "#334155", paddingHorizontal: 8, paddingVertical: 2, fontSize: 12, letterSpacing: 2 },
+  sysbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+    paddingBottom: 12,
+  },
+  sysBadge: {
+    color: "#94a3b8",
+    borderWidth: 1,
+    borderColor: "#334155",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    fontSize: 12,
+    letterSpacing: 2,
+  },
   sysText: { color: "#94a3b8", fontSize: 13, letterSpacing: 1 },
   nav: { marginLeft: "auto", flexDirection: "row", gap: 8 },
   hero: { paddingVertical: 28, gap: 14 },
@@ -276,13 +490,54 @@ const s = StyleSheet.create({
   row: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginVertical: 8 },
   cols: { flex: 1, flexDirection: "row", gap: 24, marginTop: 12 },
   col: { flex: 1 },
-  btn: { borderWidth: 1, borderColor: "#334155", borderRadius: 8, paddingHorizontal: 18, paddingVertical: 12, minHeight: 56, justifyContent: "center" },
+  btn: {
+    borderWidth: 1,
+    borderColor: "#334155",
+    borderRadius: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    minHeight: 56,
+    justifyContent: "center",
+  },
   btnActive: { borderColor: "#c9a86a", backgroundColor: "rgba(201,168,106,0.14)" },
+  btnFocused: { borderColor: "#fff", shadowColor: "#c9a86a", shadowRadius: 8 },
   btnT: { color: "#e2e8f0", fontSize: 16, fontWeight: "600" },
   btnTActive: { color: "#fff" },
-  routeRow: { flexDirection: "row", gap: 12, padding: 10, borderWidth: 1, borderColor: "#1e293b", borderRadius: 8, marginBottom: 6, backgroundColor: "#0e1426" },
+  routeRow: {
+    flexDirection: "row",
+    gap: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#1e293b",
+    borderRadius: 8,
+    marginBottom: 6,
+    backgroundColor: "#0e1426",
+  },
   now: { borderColor: "#c9a86a" },
   rng: { color: "#7dd3fc", fontVariant: ["tabular-nums"] },
   ttl: { color: "#f1f5f9", fontWeight: "600" },
-  video: { width: "100%", aspectRatio: 16 / 9, backgroundColor: "#000", borderRadius: 10 },
+  videoWrap: { position: "relative", width: "100%", aspectRatio: 16 / 9 },
+  video: { width: "100%", height: "100%", backgroundColor: "#000", borderRadius: 10 },
+  toast: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    backgroundColor: "rgba(14, 20, 38, 0.92)",
+    borderColor: "#c9a86a",
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  toastT: { color: "#c9a86a", fontWeight: "700", fontSize: 13, letterSpacing: 1 },
+  progressWrap: { marginTop: 10, marginBottom: 4 },
+  progressBar: {
+    height: 6,
+    backgroundColor: "#1e293b",
+    borderRadius: 3,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  progressFill: { height: "100%", backgroundColor: "#7dd3fc" },
+  progressText: { color: "#94a3b8", fontSize: 13, fontVariant: ["tabular-nums"] },
 });
