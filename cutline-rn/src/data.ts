@@ -1,5 +1,13 @@
 import type { Scene } from "./solver";
-const raw = require("../../data/scenes.json");
+
+// Colocated data source ensures Metro bundler bundles without monorepo resolution failures
+let raw: any;
+try {
+  raw = require("./scenes.json");
+} catch {
+  raw = require("../../data/scenes.json");
+}
+
 export const EPISODE = { ...raw.episode, demoVideo: raw.demoVideo };
 export const SCENES: Scene[] = raw.scenes;
 export const DEMO_VIDEO: string = raw.demoVideo?.sources?.[0] ?? "";
