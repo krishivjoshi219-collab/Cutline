@@ -3,8 +3,6 @@
 *.vpkg
 artifacts/
 build/
-cutline-rn/build/
-cutline-rn/android/
+android/
 node_modules/
-cutline-rn/node_modules/
 .DS_Store

@@ -1,24 +1,54 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  Linking,
-  Platform,
-  useTVEventHandler,
-  BackHandler,
-} from "react-native";
-import type { TVEvent } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Linking, Platform, BackHandler } from "react-native";
+import * as ReactNative from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Video, { type VideoRef, type OnProgressData, type OnLoadData } from "react-native-video";
-import { useKeepAwake } from "react-native-keep-awake";
+import KeepAwake from "react-native-keep-awake";
 import { buildRoute, fmt, fmtRange, type Thread } from "./src/solver";
 import { EPISODE, SCENES, DEMO_VIDEO, OTT_PROVIDERS } from "./src/data";
 
 type Screen = "home" | "choose" | "play";
 
+// Remote-event payload (structural — matches the TV fork's TVEvent shape
+// without importing it, so this file compiles on stock react-native too).
+export interface TVRemoteEvent {
+  eventType: string;
+  eventKeyAction?: string | number;
+  tag?: number;
+  target?: number;
+  body?: unknown;
+}
+
+type TVEventHandlerHook = (handler: (evt: TVRemoteEvent) => void) => void;
+
+// `useTVEventHandler` is only exported by TV-enabled React Native builds
+// (react-native-tvos fork / FireOS). Stock `react-native` does not export it,
+// so calling it unconditionally crashes the app on startup. Resolve the real
+// hook when present, otherwise fall back to a no-op so the same bundle still
+// runs on phone for debugging.
+const useTVEventHandler: TVEventHandlerHook =
+  (ReactNative as unknown as { useTVEventHandler?: TVEventHandlerHook }).useTVEventHandler ?? (() => undefined);
+
+// react-native-keep-awake@4 ships a <KeepAwake /> component with static
+// activate()/deactivate() — there is no `useKeepAwake` export, so importing
+// one crashes on startup. Local equivalent that additionally tolerates a
+// missing native module (Expo Go / phone debugging).
+function useKeepAwake(): void {
+  useEffect(() => {
+    try {
+      KeepAwake.activate();
+    } catch {
+      // Native module not linked — screen-sleep prevention unavailable.
+    }
+    return () => {
+      try {
+        KeepAwake.deactivate();
+      } catch {
+        /* noop */
+      }
+    };
+  }, []);
+}
 const FULL_BUDGET = 3134;
 const BUDGETS = [300, 900, 1800, FULL_BUDGET] as const;
 const STORAGE_KEY = "cutline:rn:v1";
@@ -54,7 +84,7 @@ export default function App(): JSX.Element {
 
   const route = useMemo(
     () => buildRoute(SCENES, budget, { thread, mood: intense ? "intense" : null, kidsOnly }),
-    [budget, thread, intense, kidsOnly]
+    [budget, thread, intense, kidsOnly],
   );
 
   const routeKey = useMemo(() => route.ids.join(","), [route.ids]);
@@ -102,13 +132,13 @@ export default function App(): JSX.Element {
   }, []);
 
   const onTVEvent = useCallback(
-    (evt: TVEvent) => {
+    (evt: TVRemoteEvent) => {
       if (evt.eventType === "playPause" && screen === "play") togglePlay();
       else if (evt.eventType === "next" || evt.eventType === "fastForward") goNext();
       else if (evt.eventType === "previous" || evt.eventType === "rewind") goPrev();
       else if (evt.eventType === "menu" && screen === "play") setScreen("choose");
     },
-    [screen, togglePlay, goNext, goPrev]
+    [screen, togglePlay, goNext, goPrev],
   );
   useTVEventHandler(onTVEvent);
 
@@ -152,7 +182,7 @@ export default function App(): JSX.Element {
       if (!videoDuration || videoDuration <= 0) return epSec;
       return (epSec / EPISODE.durationSec) * videoDuration;
     },
-    [videoDuration]
+    [videoDuration],
   );
 
   const mapToEpisode = useCallback(
@@ -160,7 +190,7 @@ export default function App(): JSX.Element {
       if (!videoDuration || videoDuration <= 0) return vidSec;
       return (vidSec / videoDuration) * EPISODE.durationSec;
     },
-    [videoDuration]
+    [videoDuration],
   );
 
   // Seek video when scene changes
@@ -186,7 +216,7 @@ export default function App(): JSX.Element {
       }
       lastSceneRef.current = idx;
     },
-    [route.scenes, mapToVideo]
+    [route.scenes, mapToVideo],
   );
 
   useEffect(() => {
@@ -199,12 +229,11 @@ export default function App(): JSX.Element {
     (data: OnLoadData) => {
       setVideoDuration(data.duration);
       if (cur && videoRef.current) {
-        const targetVid =
-          data.duration > 0 ? (cur.start / EPISODE.durationSec) * data.duration : cur.start;
+        const targetVid = data.duration > 0 ? (cur.start / EPISODE.durationSec) * data.duration : cur.start;
         videoRef.current.seek(targetVid);
       }
     },
-    [cur]
+    [cur],
   );
 
   const onProgress = useCallback(
@@ -231,7 +260,7 @@ export default function App(): JSX.Element {
       const currentSceneSec = Math.max(0, Math.min(cur.end, epCurrent) - cur.start);
       setCutElapsed(prevScenesDur + currentSceneSec);
     },
-    [cur, playing, screen, mapToVideo, mapToEpisode, sceneIdx, route.scenes, goNext]
+    [cur, playing, screen, mapToVideo, mapToEpisode, sceneIdx, route.scenes, goNext],
   );
 
   const onVideoEnd = useCallback(() => {
@@ -378,18 +407,14 @@ export default function App(): JSX.Element {
                   style={[
                     s.progressFill,
                     {
-                      width: `${Math.min(
-                        100,
-                        (cutElapsed / Math.max(1, route.totalDuration)) * 100
-                      )}%`,
+                      width: `${Math.min(100, (cutElapsed / Math.max(1, route.totalDuration)) * 100)}%`,
                     },
                   ]}
                 />
               </View>
               <Text style={s.progressText}>
                 Cut elapsed {fmt(cutElapsed)} / {fmt(route.totalDuration)} · Remaining{" "}
-                {fmt(Math.max(0, route.totalDuration - cutElapsed))} · Scene {sceneIdx + 1} of{" "}
-                {route.scenes.length}
+                {fmt(Math.max(0, route.totalDuration - cutElapsed))} · Scene {sceneIdx + 1} of {route.scenes.length}
               </Text>
             </View>
 
@@ -404,10 +429,7 @@ export default function App(): JSX.Element {
                 active
                 onPress={() => setPlaying(!playing)}
               />
-              <TVButton
-                title="Next ⏭"
-                onPress={() => setSceneIdx((i) => Math.min(route.scenes.length - 1, i + 1))}
-              />
+              <TVButton title="Next ⏭" onPress={() => setSceneIdx((i) => Math.min(route.scenes.length - 1, i + 1))} />
             </View>
           </View>
           <View style={s.col}>
@@ -416,10 +438,7 @@ export default function App(): JSX.Element {
               data={route.scenes}
               keyExtractor={(x) => x.id}
               renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  hasTVPreferredFocus={index === sceneIdx}
-                  onPress={() => setSceneIdx(index)}
-                >
+                <TouchableOpacity hasTVPreferredFocus={index === sceneIdx} onPress={() => setSceneIdx(index)}>
                   <View style={[s.routeRow, index === sceneIdx && s.now]}>
                     <Text style={s.rng}>{fmtRange(item)}</Text>
                     <Text style={s.ttl}>{item.title}</Text>

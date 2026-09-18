@@ -95,7 +95,7 @@ export function scoreScene(s: Scene, opts: SolverOptions = {}): number {
 function closeDependencies(
   ids: string[],
   byId: Record<string, Scene>,
-  skipDep?: ((dep: string) => boolean) | null
+  skipDep?: ((dep: string) => boolean) | null,
 ): string[] {
   const closed: Record<string, boolean> = {};
   asArray(ids).forEach((id) => {
@@ -136,7 +136,7 @@ export function buildRoute(scenes: Scene[], budgetSec: number, opts: SolverOptio
   if (options.mood !== "intense" && options.mood !== "gentle") options.mood = null;
 
   const clean = asArray(scenes).filter(
-    (s) => s && s.id != null && Number.isFinite(s.start) && Number.isFinite(s.end) && s.end > s.start
+    (s) => s && s.id != null && Number.isFinite(s.start) && Number.isFinite(s.end) && s.end > s.start,
   );
 
   let B = Math.max(0, Math.floor(Number.isFinite(budgetSec) ? budgetSec : 0));
@@ -222,7 +222,7 @@ export function buildRoute(scenes: Scene[], budgetSec: number, opts: SolverOptio
     chosen = closeDependencies(
       chosen.filter((id) => id !== out),
       byId,
-      skipDep
+      skipDep,
     );
   }
 
@@ -265,14 +265,8 @@ export function buildRoute(scenes: Scene[], budgetSec: number, opts: SolverOptio
 
         let kept = chosen.slice();
         while (
-          sumDuration(
-            closeDependencies(
-              kept.concat(need.filter((id) => !kept.includes(id))),
-              byId,
-              skipDep
-            ),
-            byId
-          ) > B &&
+          sumDuration(closeDependencies(kept.concat(need.filter((id) => !kept.includes(id))), byId, skipDep), byId) >
+            B &&
           evictable.length
         ) {
           const out = evictable.shift()!;

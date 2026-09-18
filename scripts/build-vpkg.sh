@@ -6,11 +6,11 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 OUT_DIR="$ROOT_DIR/build/vega"
 VPKG_NAME="cutline-firetv-v0.1.0.vpkg"
-VPKG_PATH="$ROOT_DIR/../$VPKG_NAME"
-ARTIFACTS_PATH="$ROOT_DIR/../artifacts/$VPKG_NAME"
+VPKG_PATH="$ROOT_DIR/$VPKG_NAME"
+ARTIFACTS_PATH="$ROOT_DIR/artifacts/$VPKG_NAME"
 
 mkdir -p "$OUT_DIR"
-mkdir -p "$ROOT_DIR/../artifacts"
+mkdir -p "$ROOT_DIR/artifacts"
 
 echo "=========================================="
 echo " Packaging Cutline for Amazon Vega OS"

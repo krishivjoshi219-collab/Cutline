@@ -15,17 +15,19 @@ custom budget, or a plain-English request), and the app selects the most
 story-critical **original scenes** and plays them back-to-back as one coherent cut —
 with visible jumps, a story heatmap, and a countdown of remaining cut time.
 
-## Run it (no build step)
+## Run it (React Native / Expo, Fire TV)
 
 ```bash
-npm test          # 36 solver/playback checks, zero dependencies
-npm run serve     # http://localhost:8080  (any static server works)
+npm install
+npm run tsc      # typecheck (solver, data, UI)
+npm start        # Expo dev server — open on Fire TV via dev client
+npm run android  # run on a connected Android / Fire TV device (adb)
 ```
 
-Open `index.html` over `http://` (not `file://`, so `data/scenes.json` parity can be
-verified). Works with mouse, keyboard, and Fire TV remote keys
-(arrows / OK / Back / Space). If the sample video can't load (offline), the player
-falls back to a simulated-footage canvas — routing works fully offline.
+Fire TV APK + Vega OS package are built in CI
+([`build-firetv-apk.yml`](.github/workflows/build-firetv-apk.yml)); download
+them from **Actions → Artifacts** and sideload with
+`adb install app-debug.apk`.
 
 ## Demo in 30 seconds
 
@@ -41,13 +43,14 @@ Build notes: [`FRICTION_LOG.md`](FRICTION_LOG.md).
 
 ## Repo map
 
-| Path | Purpose |
-|---|---|
-| `index.html` | 10-foot UX shell (choose → play screens, tech modal) |
-| `styles.css` | TV-first theme: huge type, focus rings, high contrast |
-| `js/app.js` | Budget UI, route preview, heatmap, NL parsing, Fire TV remote nav |
-| `js/solver.js` | Budget solver: knapsack DP + anchor enforcement + dependency repair + fill (UMD: browser + Node) |
-| `js/player.js` | Playback queue: episode→video time mapping, transitions, offline sim fallback |
-| `js/scenes.js` / `js/episode.js` | Scene index + episode constants (`file://`-safe mirrors) |
-| `data/scenes.json` | Source of truth: 28 scenes, start/end + importance + threads + deps |
-| `tests/solver.test.cjs` | Budgets, order, deps, anchors, lenses, re-entry, NL, monotonicity, mapping |
+| Path                                      | Purpose                                                                    |
+| ----------------------------------------- | -------------------------------------------------------------------------- |
+| `App.tsx`                                 | 10-foot UX: home → choose → play, D-pad / remote handling                  |
+| `src/solver.ts`                           | Budget solver: knapsack DP + anchor enforcement + dependency repair + fill |
+| `src/scenes.json` + `src/data.ts`         | Source of truth: 28 scenes, start/end + importance + threads + deps        |
+| `src/fireos.ts`                           | FireOS helpers: remote events, platform detection                          |
+| `manifest.toml` + `scripts/build-vpkg.sh` | Vega OS packaging (`.vpkg`)                                                |
+| `.github/workflows/build-firetv-apk.yml`  | CI: Fire TV APK + Vega package                                             |
+
+`ARCHITECTURE.md`, `DEMO_SCRIPT.md` and `FRICTION_LOG.md` describe the
+original prototype that this RN app was ported from.

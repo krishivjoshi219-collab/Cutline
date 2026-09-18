@@ -2,20 +2,20 @@
 
 ## Layers (strategy §6, as built)
 
-| Layer | Implementation | Purpose |
-|---|---|---|
-| Fire TV player | `js/player.js` + `<video>` | Play / pause / seek between segments; episode→video time mapping |
-| Scene index | `data/scenes.json` (28 scenes, 0–3134 s contiguous) | Candidate cuts: start/end + importance + plot/threads/deps |
-| Story graph | `required_after` chains (e.g. reveal → clue) | No setup-less reveals, no nonsense jumps |
-| Budget solver | `js/solver.js` | Maximize narrative value, Σ duration ≤ budget |
-| AI enhancement (mock) | `parseRequest()` + thread/mood scoring | NL requests → {budget, thread, mood, kids, re-entry point} |
-| Playback queue | Ordered scene list + `CutlinePlayer` | Seeks per interval; transition toasts; cut countdown |
+| Layer                 | Implementation                                     | Purpose                                                          |
+| --------------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
+| Fire TV player        | `App.tsx` + `react-native-video`                   | Play / pause / seek between segments; episode→video time mapping |
+| Scene index           | `src/scenes.json` (28 scenes, 0–3134 s contiguous) | Candidate cuts: start/end + importance + plot/threads/deps       |
+| Story graph           | `required_after` chains (e.g. reveal → clue)       | No setup-less reveals, no nonsense jumps                         |
+| Budget solver         | `src/solver.ts`                                    | Maximize narrative value, Σ duration ≤ budget                    |
+| AI enhancement (mock) | `parseRequest()` + thread/mood scoring             | NL requests → {budget, thread, mood, kids, re-entry point}       |
+| Playback queue        | Ordered scene list + `CutlinePlayer`               | Seeks per interval; transition toasts; cut countdown             |
 
 ## The algorithm (deterministic, no network, no randomness)
 
 1. **Score** every scene:
    `100·importance + plot prior (reveal+12, resolution+10, confrontation+8,
-   discovery+6, twist+5) + thread lens (+30 match / ×0.45 other) + mood`.
+discovery+6, twist+5) + thread lens (+30 match / ×0.45 other) + mood`.
 2. **Knapsack DP** over integer seconds — optimal value-density packing.
 3. **Dependency repair** — close under `required_after`; evict lowest-density
    non-required scenes until back under budget. A reveal never plays bare.

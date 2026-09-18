@@ -13,14 +13,7 @@ export function isFireTVUserAgent(ua: string): boolean {
   return /AFT|AFTM|AFTT|Fire TV|Fire OS|KFSUWI|Silk-Accelerated/i.test(ua ?? "");
 }
 
-export type FireRemoteEvent =
-  | "playPause"
-  | "next"
-  | "previous"
-  | "fastForward"
-  | "rewind"
-  | "menu"
-  | "select";
+export type FireRemoteEvent = "playPause" | "next" | "previous" | "fastForward" | "rewind" | "menu" | "select";
 
 export function shouldTogglePlay(eventType: string, screen: string): boolean {
   return eventType === "playPause" && screen === "play";
