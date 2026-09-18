@@ -1,6 +1,10 @@
 .aider*
 *.apk
 *.vpkg
+*.mp4
+*.mov
+*.webm
+20260918_204944.mp4
 artifacts/
 build/
 android/
